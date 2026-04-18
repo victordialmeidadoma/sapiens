@@ -1,35 +1,20 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import DashboardClient from '@/components/DashboardClient';
 
-export default function Home() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default async function Home() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        window.location.href = '/login';
-      } else {
-        setUser(user);
-        setLoading(false);
-      }
-    });
-  }, []);
-
-  if (loading) return (
-    <div className="loading-overlay show">
-      <div className="spinner-lg"/>
-      <span>Carregando SAPIENS...</span>
-    </div>
-  );
+  const db = createAdminClient();
+  const { data: perfil } = await db.from('perfis').select('nome, perfil').eq('id', user.id).single();
 
   return (
     <DashboardClient
-      userNome={user?.user_metadata?.nome || user?.email || 'Usuario'}
-      userPerfil={user?.user_metadata?.perfil || 'colaborador'}
+      userNome={perfil?.nome || user.email}
+      userPerfil={perfil?.perfil || 'colaborador'}
     />
   );
 }
