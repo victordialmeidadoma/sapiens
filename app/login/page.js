@@ -12,14 +12,21 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
     const supabase = createClient();
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password: senha });
-    if (err) {
+    const { data, error: err } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
+
+    if (err || !data.session) {
       setError('Email ou senha incorretos.');
       setLoading(false);
       return;
     }
-    setTimeout(() => { window.location.replace('/'); }, 500);
+
+    // Sessão salva — redireciona
+    window.location.href = '/';
   }
 
   return (
@@ -39,16 +46,18 @@ export default function LoginPage() {
         <h2 style={{fontSize:18,fontWeight:600,marginBottom:6}}>Bem-vindo</h2>
         <p style={{fontSize:13,color:"var(--t2)",marginBottom:24}}>Entre com suas credenciais para acessar o sistema.</p>
         {error && (
-          <div style={{background:"var(--rl)",border:"1px solid #F5C6C2",color:"#7B241C",borderRadius:6,padding:"10px 14px",fontSize:13,marginBottom:14}}>{error}</div>
+          <div style={{background:"var(--rl)",border:"1px solid #F5C6C2",color:"#7B241C",borderRadius:6,padding:"10px 14px",fontSize:13,marginBottom:14}}>
+            {error}
+          </div>
         )}
         <form onSubmit={handleLogin}>
           <div className="fg" style={{marginBottom:14}}>
             <label>E-mail</label>
-            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" required autoComplete="email"/>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" required/>
           </div>
           <div className="fg" style={{marginBottom:20}}>
             <label>Senha</label>
-            <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="••••••••" required autoComplete="current-password"/>
+            <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="••••••••" required/>
           </div>
           <button type="submit" className="btn btnp" style={{width:"100%",justifyContent:"center",padding:11}} disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
