@@ -12,23 +12,14 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     const supabase = createClient();
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha,
-    });
-
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password: senha });
     if (err) {
       setError('Email ou senha incorretos.');
       setLoading(false);
       return;
     }
-
-    // Aguarda um momento para o cookie ser salvo e redireciona hard
-    setTimeout(() => {
-      window.location.replace('/');
-    }, 500);
+    setTimeout(() => { window.location.replace('/'); }, 500);
   }
 
   return (
@@ -46,12 +37,25 @@ export default function LoginPage() {
         </div>
         <p className="login-sub">Sistema de Acompanhamento de Processos · TCE-MA</p>
         <h2 style={{fontSize:18,fontWeight:600,marginBottom:6}}>Bem-vindo</h2>
-        <p style={{fontSize:13,color:"var(--t2)",marginBottom:24}}>
-          Entre com suas credenciais para acessar o sistema.
-        </p>
+        <p style={{fontSize:13,color:"var(--t2)",marginBottom:24}}>Entre com suas credenciais para acessar o sistema.</p>
         {error && (
-          <div style={{background:"var(--rl)",border:"1px solid #F5C6C2",color:"#7B241C",borderRadius:6,padding:"10px 14px",fontSize:13,marginBottom:14}}>
-            {error}
-          </div>
+          <div style={{background:"var(--rl)",border:"1px solid #F5C6C2",color:"#7B241C",borderRadius:6,padding:"10px 14px",fontSize:13,marginBottom:14}}>{error}</div>
         )}
-        <form o
+        <form onSubmit={handleLogin}>
+          <div className="fg" style={{marginBottom:14}}>
+            <label>E-mail</label>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" required autoComplete="email"/>
+          </div>
+          <div className="fg" style={{marginBottom:20}}>
+            <label>Senha</label>
+            <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="••••••••" required autoComplete="current-password"/>
+          </div>
+          <button type="submit" className="btn btnp" style={{width:"100%",justifyContent:"center",padding:11}} disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+        <div className="login-hint">Primeiro acesso: <span>admin@sapiens.com</span> / <span>admin123</span></div>
+      </div>
+    </div>
+  );
+}
