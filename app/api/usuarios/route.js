@@ -3,8 +3,8 @@ import { requireAdmin } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  const { res } = await requireAdmin();
+export async function GET(req) {
+  const { res } = await requireAdmin(req);
   if (res) return res;
   const db = createAdminClient();
   const { data, error } = await db.from('perfis').select('id, nome, perfil, ativo, created_at').order('nome');
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const { res } = await requireAdmin();
+  const { res } = await requireAdmin(req);
   if (res) return res;
   const d = await req.json();
   if (!d.email || !d.senha || !d.nome) return NextResponse.json({ error: 'nome, email e senha obrigatorios' }, { status: 400 });

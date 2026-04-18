@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function PUT(req, { params }) {
-  const { res } = await requireAdmin();
+  const { res } = await requireAdmin(req);
   if (res) return res;
   const d = await req.json();
   const db = createAdminClient();
@@ -16,7 +16,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const { res } = await requireAdmin();
+  const { res } = await requireAdmin(req);
   if (res) return res;
   const db = createAdminClient();
   await db.from('municipios').delete().eq('id', params.id);

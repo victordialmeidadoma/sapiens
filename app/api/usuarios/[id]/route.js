@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function PUT(req, { params }) {
-  const { res } = await requireAdmin();
+  const { res } = await requireAdmin(req);
   if (res) return res;
   const d = await req.json();
   const db = createAdminClient();
@@ -21,7 +21,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const { user, res } = await requireAdmin();
+  const { user, res } = await requireAdmin(req);
   if (res) return res;
   if (user.id === params.id) return NextResponse.json({ error: 'Voce nao pode excluir sua propria conta' }, { status: 400 });
   const db = createAdminClient();

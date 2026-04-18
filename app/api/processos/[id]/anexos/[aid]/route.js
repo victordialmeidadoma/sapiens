@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'anexos';
 
 export async function GET(req, { params }) {
-  const { res } = await requireAuth();
+  const { res } = await requireAuth(req);
   if (res) return res;
 
   const db = createAdminClient();
@@ -21,7 +21,7 @@ export async function GET(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const { res } = await requireAdmin();
+  const { res } = await requireAdmin(req);
   if (res) return res;
 
   const db = createAdminClient();

@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export async function POST(req, { params }) {
-  const { res } = await requireAdmin();
+  const { res } = await requireAdmin(req);
   if (res) return res;
   const d = await req.json();
   const db = createAdminClient();

@@ -3,8 +3,8 @@ import { requireAuth, requireAdmin } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  const { res } = await requireAuth();
+export async function GET(req) {
+  const { res } = await requireAuth(req);
   if (res) return res;
 
   const db = createAdminClient();
@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const { res } = await requireAdmin();
+  const { res } = await requireAdmin(req);
   if (res) return res;
 
   const d = await req.json();
