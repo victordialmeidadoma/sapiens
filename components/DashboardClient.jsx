@@ -1,5 +1,5 @@
 'use client';
-import { api } from './api';
+import { api } from '@/components/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -45,18 +45,7 @@ function Toast({ msg, type }) {
   return <div className={`toast show ${type}`}>{msg}</div>;
 }
 
-// ── API HELPER ────────────────────────────────────────────────────────────────
-// api moved to components/api.js
-  const res = await fetch(url, {
-    headers: opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {},
-    ...opts,
-    body: opts.body instanceof FormData ? opts.body : opts.body ? JSON.stringify(opts.body) : undefined,
-  });
-  if (res.status === 401) { window.location.href = '/login'; throw new Error('401'); }
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.statusText); }
-  const ct = res.headers.get('content-type') || '';
-  return ct.includes('json') ? res.json() : res;
-}
+
 
 // ── STAT BAR ──────────────────────────────────────────────────────────────────
 function StatBar({ label, value, max, color }) {
