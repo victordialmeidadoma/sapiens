@@ -9,10 +9,28 @@ export default function Home() {
   useEffect(() => {
     async function init() {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = '/login'; return; }
-      const { data: p } = await supabase.from('perfis').select('nome, perfil').eq('id', user.id).single();
-      setState({ loading: false, user, perfil: p?.perfil || 'colaborador', nome: p?.nome || user.email });
+
+      // Espera a sessão estar pronta
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { window.location.href = '/login'; return; }
+
+      const user = session.user;
+      const meta = user.user_metadata || {};
+
+      // Tenta buscar perfil do banco, mas usa metadata como fallback
+      let nome = meta.nome || user.email;
+      let perfil = meta.perfil || 'colaborador';
+
+      try {
+        const { data: p } = await supabase
+          .from('perfis')
+          .select('nome, perfil')
+          .eq('id', user.id)
+          .single();
+        if (p) { nome = p.nome || nome; perfil = p.perfil || perfil; }
+      } catch(e) {}
+
+      setState({ loading: false, user, perfil, nome });
     }
     init();
   }, []);
