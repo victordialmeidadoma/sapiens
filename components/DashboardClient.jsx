@@ -1,4 +1,5 @@
 'use client';
+import { api } from './api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -45,7 +46,7 @@ function Toast({ msg, type }) {
 }
 
 // ── API HELPER ────────────────────────────────────────────────────────────────
-async function api(url, opts = {}) {
+// api moved to components/api.js
   const res = await fetch(url, {
     headers: opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {},
     ...opts,
