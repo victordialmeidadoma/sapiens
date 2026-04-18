@@ -4,8 +4,11 @@ import { NextResponse } from 'next/server';
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // Public routes
-  if (pathname.startsWith('/login') || pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon') ||
+    pathname.startsWith('/api/')
+  ) {
     return NextResponse.next();
   }
 
@@ -28,8 +31,12 @@ export async function middleware(request) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user && !pathname.startsWith('/api/')) {
+  if (!user && pathname !== '/login') {
     return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (user && pathname === '/login') {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return response;
