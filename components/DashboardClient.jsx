@@ -1,6 +1,4 @@
 'use client';
-import React from 'react';
-import { api } from '@/components/api';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -46,7 +44,18 @@ function Toast({ msg, type }) {
   return <div className={`toast show ${type}`}>{msg}</div>;
 }
 
-
+// ── API HELPER ────────────────────────────────────────────────────────────────
+async function api(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {},
+    ...opts,
+    body: opts.body instanceof FormData ? opts.body : opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (res.status === 401) { window.location.href = '/login'; throw new Error('401'); }
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.statusText); }
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('json') ? res.json() : res;
+}
 
 // ── STAT BAR ──────────────────────────────────────────────────────────────────
 function StatBar({ label, value, max, color }) {
@@ -119,7 +128,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
   const [munTab, setMunTab] = useState('perfil');
 
   const [gestorModal, setGestorModal] = useState(null);
-  const [userModal, setUserModal] = useState(null);
+  const [userModal, setUserModal] = useState(undefined);
 
   const [rptModal, setRptModal] = useState(false);
   const [rptType, setRptType] = useState('p');
@@ -469,7 +478,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
     const pri = isA ? '#1B6EC2' : '#1B7A4A';
     const lt  = isA ? '#EBF3FB' : '#E8F5EE';
     const brd = isA ? '#90C2EE' : '#A7D7BF';
-    const nm  = isA ? 'Empresa A — Advocacia Publica' : 'Empresa B — Consultoria Tributaria';
+    const nm  = isA ? 'ELOI ASSESSORIA E CONSULTORIA JURIDICA' : 'PR COMPLIANCE';
     const dt  = new Date().toLocaleDateString('pt-BR', { year:'numeric', month:'long', day:'numeric' });
     let rows = [];
     if (rptType==='p') rows = [...processos];
@@ -481,6 +490,78 @@ export default function DashboardClient({ userNome, userPerfil }) {
     const tm = rows.filter(p => { const d=du(p); return d!==null&&d<=30&&d>=0; }).length;
     setRptPreview({ pri, lt, brd, nm, dt, rows, title: titles[rptType], tu, tm });
     setRptModal(false);
+  }
+
+
+  function printProc() {
+    const p = procModal;
+    if (!p) return;
+    const dt = new Date().toLocaleDateString('pt-BR', {year:'numeric',month:'long',day:'numeric'});
+    const fmtDate = s => s ? new Date(s+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    const esc = s => (s||'—').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+      '<title>SAPIENS - Processo ' + p.proc + '</title>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">' +
+      '<style>' +
+        '*{box-sizing:border-box;margin:0;padding:0}' +
+        'body{font-family:Inter,sans-serif;padding:32px;font-size:13px;line-height:1.6;color:#212529}' +
+        '.header{border-bottom:3px solid #1B6EC2;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start}' +
+        'h1{font-size:20px;font-weight:600;margin-bottom:4px}' +
+        '.sub{font-size:12px;color:#6C757D;margin-bottom:0}' +
+        '.badge{background:#EBF3FB;color:#1B6EC2;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:600}' +
+        '.section{margin-bottom:20px}' +
+        '.st{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1B6EC2;border-bottom:1px solid #E0E3E8;padding-bottom:6px;margin-bottom:12px}' +
+        '.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}' +
+        '.f label{font-size:10px;font-weight:600;color:#6C757D;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:2px}' +
+        '.f span{font-size:13px;color:#212529}' +
+        '.mono{font-family:"JetBrains Mono",monospace}' +
+        '.full{grid-column:1/-1}' +
+        '.footer{margin-top:32px;padding-top:12px;border-top:1px solid #E0E3E8;font-size:11px;color:#6C757D;display:flex;justify-content:space-between}' +
+        '@media print{@page{margin:18mm;size:A4}}' +
+      '</style></head><body>' +
+      '<div class="header">' +
+        '<div>' +
+          '<div style="font-size:11px;font-weight:700;color:#1B6EC2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">SAPIENS · TCE-MA</div>' +
+          '<h1>Processo ' + esc(p.proc) + '</h1>' +
+          '<div class="sub">' + esc(p.tipo_ente) + ' ' + esc(p.mun) + ' &middot; Exercicio ' + esc(p.ex) + '</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div class="badge">' + esc(p.et) + '</div>' +
+          '<div style="font-size:11px;color:#6C757D;margin-top:6px">Emitido em ' + dt + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="section"><div class="st">Dados do processo</div><div class="grid">' +
+        '<div class="f"><label>Numero</label><span class="mono">' + esc(p.proc) + '</span></div>' +
+        '<div class="f"><label>Exercicio</label><span>' + esc(p.ex) + '</span></div>' +
+        '<div class="f"><label>Municipio</label><span>' + esc(p.mun) + '</span></div>' +
+        '<div class="f"><label>Tipo de ente</label><span>' + esc(p.tipo_ente) + '</span></div>' +
+        '<div class="f full"><label>Assunto</label><span>' + esc(p.ass) + '</span></div>' +
+        '<div class="f"><label>Natureza</label><span>' + esc(p.natureza) + '</span></div>' +
+        '<div class="f"><label>Especie</label><span>' + esc(p.especie) + '</span></div>' +
+        '<div class="f"><label>Relator</label><span>' + esc(p.relator) + '</span></div>' +
+        '<div class="f"><label>Gestor</label><span>' + esc(p.gestor) + '</span></div>' +
+        '<div class="f"><label>Responsavel / Advogado</label><span>' + esc(p.resp) + '</span></div>' +
+        '<div class="f"><label>Responsavel interno</label><span>' + esc(p.resp_int) + '</span></div>' +
+        '<div class="f"><label>Situacao</label><span>' + esc(p.sit) + '</span></div>' +
+      '</div></div>' +
+      '<div class="section"><div class="st">Prazos</div><div class="grid">' +
+        '<div class="f"><label>Data de citacao</label><span class="mono">' + fmtDate(p.cit) + '</span></div>' +
+        '<div class="f"><label>Prazo inicial</label><span class="mono">' + fmtDate(p.pz) + '</span></div>' +
+        '<div class="f"><label>Prazo prorrogado</label><span class="mono">' + fmtDate(p.pr) + '</span></div>' +
+        '<div class="f"><label>Prazo Int. Resp.</label><span>' + esc(p.pi) + '</span></div>' +
+        '<div class="f"><label>Pedir prorrogacao</label><span>' + esc(p.pp||'Nao') + '</span></div>' +
+      '</div></div>' +
+      (p.mt||p.md ? '<div class="section"><div class="st">Ultima movimentacao TCE</div><div class="grid"><div class="f"><label>Data</label><span class="mono">' + fmtDate(p.mt) + '</span></div><div class="f full"><label>Descricao</label><span>' + esc(p.md) + '</span></div></div></div>' : '') +
+      (p.ac ? '<div class="section"><div class="st">Acao / Proximo passo</div><p>' + esc(p.ac) + '</p></div>' : '') +
+      (p.obs ? '<div class="section"><div class="st">Observacoes internas</div><p>' + esc(p.obs) + '</p></div>' : '') +
+      '<div class="footer"><span>SAPIENS · TCE-MA</span><span>Processo ' + esc(p.proc) + ' &middot; ' + dt + '</span></div>' +
+      '<script>window.onload=function(){window.print();}<\/script>' +
+      '</body></html>';
+
+    const w = window.open('', '_blank', 'width=900,height=700');
+    w.document.write(html);
+    w.document.close();
   }
 
   function printRpt() {
@@ -988,6 +1069,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
             </div>
             <div className="mft">
               <button className="btn btn-sm" onClick={()=>setProcModal(null)}>Fechar</button>
+              <button className="btn btn-sm" onClick={printProc}>🖨 Imprimir</button>
               {isAdmin && <><button className="btn btn-sm btnd" onClick={deleteProc}>Excluir</button><button className="btn btn-sm btnp" onClick={saveProc}>Salvar alteracoes</button></>}
             </div>
           </div>
@@ -1228,7 +1310,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                   <div style={{display:'flex',gap:14}}>
                     {[{id:'Prefeitura',label:'Prefeitura / Secretaria',sub:'Poder Executivo Municipal'},{id:'Camara Municipal',label:'Camara Municipal',sub:'Poder Legislativo Municipal'}].map(t=>(
                       <div key={t.id} className={`type-card${npTipo===t.id?' selected':''}`} onClick={()=>{setNpTipo(t.id);setNpStep(2);}}>
-                        <div style={{fontSize:28,marginBottom:8}}>🏛</div>
+                        <div style={{marginBottom:10}}><svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='var(--blue)' strokeWidth='1.5'><path d='M3 22h18M3 10h18M12 2L2 10h20L12 2z'/><rect x='5' y='10' width='3' height='12'/><rect x='10.5' y='10' width='3' height='12'/><rect x='16' y='10' width='3' height='12'/></svg></div>
                         <div style={{fontSize:14,fontWeight:600,marginBottom:3}}>{t.label}</div>
                         <div style={{fontSize:11,color:'var(--t3)'}}>{t.sub}</div>
                       </div>
@@ -1313,7 +1395,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
               )}
               <div style={{fontSize:11,fontWeight:600,color:'var(--t2)',marginBottom:12,textTransform:'uppercase',letterSpacing:'.07em'}}>2. Identidade visual</div>
               <div className="g2" style={{gap:10}}>
-                {[{k:'A',label:'Empresa A',sub:'Cabecalho azul institucional'},{k:'B',label:'Empresa B',sub:'Cabecalho verde-escuro'}].map(({k,label,sub})=>(
+                {[{k:'A',label:'ELOI ASSESSORIA',sub:'Cabecalho azul'},{k:'B',label:'PR COMPLIANCE',sub:'Cabecalho verde-escuro'}].map(({k,label,sub})=>(
                   <div key={k} className={`ropt${rptCo===k?' sel':''}`} onClick={()=>setRptCo(k)}>
                     <div style={{fontSize:11,fontWeight:700,color:rptCo===k?'var(--blue)':'var(--t2)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:4}}>{label}</div>
                     <div style={{fontSize:12,color:'var(--t2)'}}>{sub}</div>
