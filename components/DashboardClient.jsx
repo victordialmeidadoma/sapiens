@@ -120,6 +120,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
   const [consModal, setConsModal] = useState(undefined);
   const [consForm, setConsForm] = useState({ nome: '', tipo: 'Conselheiro' });
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [toast, setToast] = useState({ msg: '', type: 'ok' });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -139,6 +140,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
   const [procHist, setProcHist] = useState([]);
   const [procAnex, setProcAnex] = useState([]);
   const [procTab, setProcTab] = useState('dados');
+  const [procEditMode, setProcEditMode] = useState(false);
 
   const [munModal, setMunModal] = useState(null);
   const [munTab, setMunTab] = useState('perfil');
@@ -185,6 +187,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       const [p, m, g, c, u] = await Promise.all(reqs);
       setProcessos(p); setMunicipios(m); setGestores(g); setConselheiros(c || []);
       if (u) setUsuarios(u);
+      setDataLoaded(true);
     } catch(e) { showToast('Erro ao carregar dados', 'err'); }
     finally { setLoading(false); }
   }
@@ -249,6 +252,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
     setProcModal({ ...p });
     setPForm({ ...p, ri: p.resp_int });
     setProcTab('dados');
+    setProcEditMode(false);
     const [hist, anex] = await Promise.all([
       api(`/api/processos/${id}/historico`),
       api(`/api/processos/${id}/anexos`),
@@ -667,7 +671,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────
-  if (loading) return (
+  if (loading || !dataLoaded) return (
     <div className="loading-overlay show">
       <div className="spinner-lg" />
       <span>Carregando SAPIENS...</span>
@@ -864,7 +868,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                         const d = du(p);
                         return (
                           <tr key={p.id} className={`cl${d!==null&&d<=7&&d>=0?' urg':d!==null&&d<=30&&d>=0?' wrn':''}`} onClick={()=>setProcView(processos.find(x=>x.id===p.id))}>
-                            <td style={{padding:'0 4px 0 14px',width:16}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ADB5BD" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+                            <td style={{padding:'0 4px 0 14px',width:16}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg></td>
                             <td className="tdm">{p.proc}</td>
                             <td style={{fontSize:12}}>{p.ex||'—'}</td>
                             <td style={{fontSize:12,maxWidth:130,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.tipo_ente?<span className="badge bgr" style={{fontSize:10,marginRight:4}}>{p.tipo_ente==='Camara Municipal'?'CM':'PF'}</span>:null}{p.mun||'—'}</td>
@@ -874,7 +878,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                             <td><DaysBadge days={d}/></td>
                             <td><EtapaBadge et={p.et}/></td>
                             <td style={{fontSize:11,color:'var(--t2)'}}>{p.mt ? <><span style={{fontFamily:'"JetBrains Mono",monospace'}}>{fd(p.mt)}</span>{p.md?<><br/><span style={{color:'var(--t3)'}}>{p.md.substring(0,25)}</span></>:null}</> : <span style={{color:'var(--t3)'}}>—</span>}</td>
-                            <td>{isAdmin && <button className="btn btn-sm btn-ghost" style={{fontSize:11}} onClick={e=>{e.stopPropagation();openProc(p.id);}}>✏️ Editar</button>}</td>
+                            <td>{isAdmin && <button className="btn btn-sm btn-ghost" style={{fontSize:11,color:'var(--blue)'}} onClick={e=>{e.stopPropagation();openProc(p.id).then(()=>setProcEditMode(true));}}>✏️ Editar</button>}</td>
                           </tr>
                         );
                       })}
@@ -964,7 +968,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
             <>
               <div className="fr">
                 <input type="text" placeholder="Buscar gestor..." value={geQ} onChange={e=>setGeQ(e.target.value)} style={{maxWidth:280}}/>
-                {isAdmin && <button className="btn btn-sm btnp" onClick={()=>openGestor(null)}>+ Gestor</button>}
+                {isAdmin && <button className="btn btn-sm btnp" onClick={()=>openGestor({})}>+ Gestor</button>}
               </div>
               {gestores.filter(g=>!geQ||g.nome.toLowerCase().includes(geQ.toLowerCase())).length === 0
                 ? <div style={{textAlign:'center',padding:48,color:'var(--t3)',border:'1px dashed var(--bdr)',borderRadius:8}}>Nenhum gestor cadastrado.</div>
@@ -1375,7 +1379,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       )}
 
       {/* ══ MODAL: GESTOR ══════════════════════════════════════════════ */}
-      {gestorModal !== null && (
+      {gestorModal != null && (
         <div className="modal-bg open">
           <div className="modal">
             <div className="mhd"><h2>{gestorModal?.id ? gestorModal.nome : 'Novo gestor'}</h2><button className="xb" onClick={()=>setGestorModal(null)}>✕</button></div>
