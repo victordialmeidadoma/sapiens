@@ -903,16 +903,16 @@ export default function DashboardClient({ userNome, userPerfil }) {
                   <div className="card-title">Proximos vencimentos</div>
                   <div className="tw">
                     <table>
-                      <thead><tr><th>Processo</th><th>Municipio</th><th>Assunto</th><th>Prazo</th><th style={{width:70}}>Dias</th><th>Etapa</th></tr></thead>
+                      <thead><tr><th>Processo</th><th>Município</th><th className="hide-xs">Assunto</th><th className="hide-xs">Prazo</th><th>Dias</th><th className="hide-xs">Etapa</th></tr></thead>
                       <tbody>
                         {proxVenc.map(p => { const d=du(p); return (
                           <tr key={p.id} className={`cl${d!==null&&d<=7&&d>=0?' urg':d!==null&&d<=30&&d>=0?' wrn':''}`} onClick={()=>openProcView(processos.find(x=>x.id===p.id))}>
                             <td className="tdm">{p.proc}</td>
                             <td style={{fontSize:12,maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.mun||'—'}</td>
-                            <td style={{fontSize:12,maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(p.ass||'').substring(0,38)}</td>
-                            <td style={{fontFamily:'"JetBrains Mono",monospace',fontSize:12}}>{fd(p.pr||p.pz)}</td>
+                            <td className="hide-xs" style={{fontSize:12,maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(p.ass||'').substring(0,38)}</td>
+                            <td className="hide-xs" style={{fontFamily:'"JetBrains Mono",monospace',fontSize:12}}>{fd(p.pr||p.pz)}</td>
                             <td><DaysBadge days={d}/></td>
-                            <td><EtapaBadge et={p.et}/></td>
+                            <td className="hide-xs"><EtapaBadge et={p.et}/></td>
                           </tr>
                         );
                         })}
@@ -969,7 +969,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
               <div className="card" style={{padding:0,overflow:'hidden'}}>
                 <div className="tw">
                   <table>
-                    <thead><tr><th></th><th>Processo</th><th>Ex.</th><th>Municipio</th><th>Assunto</th><th>Responsavel</th><th>Prazo final</th><th>Dias</th><th>Etapa</th><th>Ult. TCE</th><th></th></tr></thead>
+                    <thead><tr><th style={{width:16}}></th><th>Processo</th><th className='hide-xs'>Ex.</th><th>Município</th><th className='hide-xs'>Assunto</th><th className='hide-xs'>Responsável</th><th>Prazo</th><th>Dias</th><th>Etapa</th><th className='hide-xs'>Últ. TCE</th><th className='hide-xs'></th></tr></thead>
                     <tbody>
                       {filteredProc.map(p => {
                         const d = du(p);
@@ -979,8 +979,8 @@ export default function DashboardClient({ userNome, userPerfil }) {
                             <td className="tdm">{p.proc}</td>
                             <td style={{fontSize:12}}>{p.ex||'—'}</td>
                             <td style={{fontSize:12,maxWidth:130,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.tipo_ente?<span className="badge bgr" style={{fontSize:10,marginRight:4}}>{p.tipo_ente==='Camara Municipal'?'CM':'PF'}</span>:null}{p.mun||'—'}</td>
-                            <td style={{fontSize:12,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(p.ass||'').substring(0,48)}</td>
-                            <td style={{fontSize:12}}>{p.resp?p.resp.split(' ').slice(0,2).join(' '):'—'}</td>
+                            <td className='hide-xs' style={{fontSize:12,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(p.ass||'').substring(0,48)}</td>
+                            <td className='hide-xs' style={{fontSize:12}}>{p.resp?p.resp.split(' ').slice(0,2).join(' '):'—'}</td>
                             <td style={{fontFamily:'"JetBrains Mono",monospace',fontSize:12}}>{fd(p.pr||p.pz)}</td>
                             <td><DaysBadge days={d}/></td>
                             <td><EtapaBadge et={p.et}/></td>
@@ -1660,7 +1660,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
             </div>
             <div className="mbd">
               {/* Step indicators */}
-              <div style={{display:'flex',alignItems:'flex-start',gap:0,marginBottom:24}}>
+              <div style={{display:'flex',alignItems:'flex-start',gap:0,marginBottom:20,overflowX:'auto'}}>
                 {[1,2,3].map((s,i)=>(
                   <React.Fragment key={s}>
                     <div style={{flex:1,textAlign:'center'}}>
@@ -1676,7 +1676,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
               {npStep===1 && (
                 <div>
                   <div style={{fontSize:14,color:'var(--t2)',marginBottom:18,textAlign:'center'}}>O processo e de uma camara municipal ou de uma prefeitura / secretaria?</div>
-                  <div style={{display:'flex',gap:14}}>
+                  <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
                     {[{id:'Prefeitura',label:'Prefeitura / Secretaria',sub:'Poder Executivo Municipal'},{id:'Camara Municipal',label:'Camara Municipal',sub:'Poder Legislativo Municipal'}].map(t=>(
                       <div key={t.id} className={`type-card${npTipo===t.id?' selected':''}`} onClick={()=>{setNpTipo(t.id);setNpStep(2);}}>
                         <div style={{marginBottom:10}}><svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='var(--blue)' strokeWidth='1.5'><path d='M3 22h18M3 10h18M12 2L2 10h20L12 2z'/><rect x='5' y='10' width='3' height='12'/><rect x='10.5' y='10' width='3' height='12'/><rect x='16' y='10' width='3' height='12'/></svg></div>
@@ -1966,7 +1966,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
               <button className="xb" onClick={()=>setProcView(null)}>✕</button>
             </div>
             <div className="mbd">
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginBottom:20}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:16,marginBottom:16}}>
                 {/* Coluna esquerda — dados */}
                 <div>
                   <div style={{fontSize:10,fontWeight:700,color:'var(--blue)',textTransform:'uppercase',letterSpacing:'.07em',borderBottom:'2px solid var(--bl)',paddingBottom:6,marginBottom:14}}>Dados do processo</div>
