@@ -25,7 +25,7 @@ export async function PUT(req, { params }) {
     mun: d.mun, tipo_ente: d.tipo_ente, gestor: d.gestor,
     natureza: d.natureza, especie: d.especie, relator: d.relator,
     resp: d.resp, resp_int: d.ri, cit: d.cit, pz: d.pz, pr: d.pr,
-    pi: d.pi, pp: d.pp, obs: d.obs, ac: d.ac, mt: d.mt, md: d.md,
+    pi: d.pi, pp: d.pp, obs: d.obs, ac: d.ac, mt: d.mt, md: d.md, atencao: d.atencao||false, atencao_obs: d.atencao_obs||null,
   }).eq('id', params.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

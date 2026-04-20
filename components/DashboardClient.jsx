@@ -225,6 +225,8 @@ export default function DashboardClient({ userNome, userPerfil }) {
 
   // Sort processos by deadline
   const proxVenc = [...processos].filter(p => du(p) !== null).sort((a,b) => du(a)-du(b)).slice(0,12);
+  const comAtencao = processos.filter(p => p.atencao);
+  const ultimosAtualizados = [...processos].filter(p => p.updated_at).sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0,8);
 
   // Etapa chart data
   const etapaCnt = {};
@@ -291,7 +293,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       await api(`/api/processos/${procModal.id}`, { method: 'DELETE' });
       setProcessos(prev => prev.filter(x => x.id !== procModal.id));
       setProcModal(null);
-      showToast('Processo excluido');
+      showToast('Processo excluído');
     } catch(e) { showToast('Erro ao excluir', 'err'); }
   }
 
@@ -361,7 +363,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       const updated = { ...munModal, ...mForm };
       setMunModal(updated);
       setMunicipios(prev => prev.map(x => x.id === munModal.id ? { ...x, ...mForm } : x));
-      showToast('Municipio salvo');
+      showToast('Município salvo');
     } catch(e) { showToast('Erro', 'err'); }
   }
 
@@ -371,7 +373,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       await api(`/api/municipios/${munModal.id}`, { method: 'DELETE' });
       setMunicipios(prev => prev.filter(x => x.id !== munModal.id));
       setMunModal(null);
-      showToast('Municipio excluido');
+      showToast('Município excluído');
     } catch(e) { showToast('Erro', 'err'); }
   }
 
@@ -474,7 +476,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       await api(`/api/gestores/${gestorModal.id}`, { method: 'DELETE' });
       setGestores(prev => prev.filter(x => x.id !== gestorModal.id));
       setGestorModal(null);
-      showToast('Gestor excluido');
+      showToast('Gestor excluído');
     } catch(e) { showToast('Erro', 'err'); }
   }
 
@@ -493,7 +495,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       const u = await api('/api/usuarios');
       setUsuarios(u);
       setUserModal(undefined);
-      showToast('Usuario salvo');
+      showToast('Usuário salvo');
     } catch(e) { showToast('Erro: ' + e.message, 'err'); }
   }
 
@@ -503,7 +505,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
       await api(`/api/usuarios/${userModal.id}`, { method: 'DELETE' });
       setUsuarios(prev => prev.filter(x => x.id !== userModal.id));
       setUserModal(undefined);
-      showToast('Usuario excluido');
+      showToast('Usuário excluído');
     } catch(e) { showToast('Erro', 'err'); }
   }
 
@@ -548,8 +550,8 @@ export default function DashboardClient({ userNome, userPerfil }) {
   }
 
 
-  function printProc() {
-    const p = procModal;
+  function printProc(procParam) {
+    const p = procParam || procModal;
     if (!p) return;
     const dt = new Date().toLocaleDateString('pt-BR', {year:'numeric',month:'long',day:'numeric'});
     const fmtDate = s => s ? new Date(s+'T12:00:00').toLocaleDateString('pt-BR') : '—';
@@ -588,26 +590,26 @@ export default function DashboardClient({ userNome, userPerfil }) {
       '</div>' +
       '<div class="section"><div class="st">Dados do processo</div><div class="grid">' +
         '<div class="f"><label>Numero</label><span class="mono">' + esc(p.proc) + '</span></div>' +
-        '<div class="f"><label>Exercicio</label><span>' + esc(p.ex) + '</span></div>' +
-        '<div class="f"><label>Municipio</label><span>' + esc(p.mun) + '</span></div>' +
+        '<div class="f"><label>Exercício</label><span>' + esc(p.ex) + '</span></div>' +
+        '<div class="f"><label>Município</label><span>' + esc(p.mun) + '</span></div>' +
         '<div class="f"><label>Tipo de ente</label><span>' + esc(p.tipo_ente) + '</span></div>' +
         '<div class="f full"><label>Assunto</label><span>' + esc(p.ass) + '</span></div>' +
         '<div class="f"><label>Natureza</label><span>' + esc(p.natureza) + '</span></div>' +
-        '<div class="f"><label>Especie</label><span>' + esc(p.especie) + '</span></div>' +
+        '<div class="f"><label>Espécie</label><span>' + esc(p.especie) + '</span></div>' +
         '<div class="f"><label>Relator</label><span>' + esc(p.relator) + '</span></div>' +
         '<div class="f"><label>Gestor</label><span>' + esc(p.gestor) + '</span></div>' +
-        '<div class="f"><label>Responsavel / Advogado</label><span>' + esc(p.resp) + '</span></div>' +
-        '<div class="f"><label>Responsavel interno</label><span>' + esc(p.resp_int) + '</span></div>' +
-        '<div class="f"><label>Situacao</label><span>' + esc(p.sit) + '</span></div>' +
+        '<div class="f"><label>Responsável / Advogado</label><span>' + esc(p.resp) + '</span></div>' +
+        '<div class="f"><label>Responsável interno</label><span>' + esc(p.resp_int) + '</span></div>' +
+        '<div class="f"><label>Situação</label><span>' + esc(p.sit) + '</span></div>' +
       '</div></div>' +
       '<div class="section"><div class="st">Prazos</div><div class="grid">' +
         '<div class="f"><label>Data de citacao</label><span class="mono">' + fmtDate(p.cit) + '</span></div>' +
         '<div class="f"><label>Prazo inicial</label><span class="mono">' + fmtDate(p.pz) + '</span></div>' +
         '<div class="f"><label>Prazo prorrogado</label><span class="mono">' + fmtDate(p.pr) + '</span></div>' +
         '<div class="f"><label>Prazo Int. Resp.</label><span>' + esc(p.pi) + '</span></div>' +
-        '<div class="f"><label>Pedir prorrogacao</label><span>' + esc(p.pp||'Nao') + '</span></div>' +
+        '<div class="f"><label>Pedir prorrogacao</label><span>' + esc(p.pp||'Não') + '</span></div>' +
       '</div></div>' +
-      (p.mt||p.md ? '<div class="section"><div class="st">Ultima movimentacao TCE</div><div class="grid"><div class="f"><label>Data</label><span class="mono">' + fmtDate(p.mt) + '</span></div><div class="f full"><label>Descricao</label><span>' + esc(p.md) + '</span></div></div></div>' : '') +
+      (p.mt||p.md ? '<div class="section"><div class="st">Ultima movimentacao TCE</div><div class="grid"><div class="f"><label>Data</label><span class="mono">' + fmtDate(p.mt) + '</span></div><div class="f full"><label>Descrição</label><span>' + esc(p.md) + '</span></div></div></div>' : '') +
       (p.ac ? '<div class="section"><div class="st">Acao / Proximo passo</div><p>' + esc(p.ac) + '</p></div>' : '') +
       (p.obs ? '<div class="section"><div class="st">Observacoes internas</div><p>' + esc(p.obs) + '</p></div>' : '') +
       '<div class="footer"><span>SAPIENS · TCE-MA</span><span>Processo ' + esc(p.proc) + ' &middot; ' + dt + '</span></div>' +
@@ -792,7 +794,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
               </div>
             </div>
             <div className="tba">
-              <button className="btn btn-sm" onClick={()=>setRptModal(true)}>Relatorio</button>
+              <button className="btn btn-sm" onClick={()=>setRptModal(true)}>Relatório</button>
               {isAdmin && <button className="btn btn-sm btnp" onClick={openNovo}>+ Novo processo</button>}
               <div className="user-pill" onClick={()=>setUserMenuOpen(v=>!v)}>
                 <div className="user-av">{userNome.charAt(0).toUpperCase()}</div>
@@ -836,6 +838,21 @@ export default function DashboardClient({ userNome, userPerfil }) {
                 <div className="kpi-mini"><div className="kpi-icon" style={{background:'var(--gl)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div><div className="kpi-val" style={{color:'var(--grn)'}}>{municipios.length}</div><div className="kpi-lbl">Municipios</div></div></div>
               </div>
               <div style={{marginBottom:14}}>
+                {comAtencao.length > 0 && (
+                  <div style={{background:'#FFF3CD',border:'2px solid #FFC107',borderRadius:8,padding:'12px 16px',marginBottom:12}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#856404" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <strong style={{color:'#856404',fontSize:13}}>{comAtencao.length} processo(s) requerem ATENÇÃO</strong>
+                    </div>
+                    {comAtencao.map(p=>(
+                      <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'5px 0',borderTop:'1px solid rgba(133,100,4,.15)',cursor:'pointer'}} onClick={()=>openProcView(p)}>
+                        <span style={{fontFamily:'"JetBrains Mono",monospace',fontSize:12,fontWeight:700,color:'#856404',minWidth:90}}>{p.proc}</span>
+                        <span style={{fontSize:12,color:'#856404'}}>{p.mun||''}</span>
+                        {p.atencao_obs && <span style={{fontSize:12,color:'#6d5204',fontStyle:'italic'}}>— {p.atencao_obs}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {ov.length > 0 && <div className="alrt r"><div><strong>{ov.length} processo(s) com prazo vencido</strong>{ov.slice(0,5).map(p=>p.proc).join(' · ')}{ov.length>5?` e mais ${ov.length-5}...`:''}</div></div>}
                 {urg.length > 0 && <div className="alrt a"><div><strong>{urg.length} processo(s) vencem em ate 7 dias</strong>{urg.map(p=>`${p.proc} (${p.mun||'—'})`).join(' · ')}</div></div>}
                 {aguardPub.length > 0 && <div className="alrt" style={{background:'#F5F3FF',border:'1px solid #A78BFA',color:'#4C1D95'}}><div><strong>{aguardPub.length} processo(s) aguardando publicacao</strong></div></div>}
@@ -873,6 +890,28 @@ export default function DashboardClient({ userNome, userPerfil }) {
                   </div>
                 </div>
               </div>
+              <div className="card" style={{marginTop:16}}>
+                <div className="card-title">Últimos processos atualizados</div>
+                <div className="tw">
+                  <table>
+                    <thead><tr><th>Processo</th><th>Município</th><th>Etapa</th><th>Atualizado em</th><th></th></tr></thead>
+                    <tbody>
+                      {ultimosAtualizados.map(p=>(
+                        <tr key={p.id} className="cl" onClick={()=>openProcView(p)}>
+                          <td className="tdm">
+                            {p.atencao && <span style={{display:'inline-block',width:7,height:7,borderRadius:'50%',background:'#FFC107',marginRight:6,verticalAlign:'middle'}}/>}
+                            {p.proc}
+                          </td>
+                          <td style={{fontSize:12}}>{p.mun||'—'}</td>
+                          <td><EtapaBadge et={p.et}/></td>
+                          <td style={{fontFamily:'"JetBrains Mono",monospace',fontSize:11,color:'var(--t3)'}}>{p.updated_at?new Date(p.updated_at).toLocaleDateString('pt-BR'):'—'}</td>
+                          <td>{p.atencao&&<span style={{fontSize:10,fontWeight:700,background:'#FFC107',color:'#856404',padding:'1px 8px',borderRadius:3}}>ATENÇÃO</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </>
           )}
 
@@ -905,7 +944,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                             <td><DaysBadge days={d}/></td>
                             <td><EtapaBadge et={p.et}/></td>
                             <td style={{fontSize:11,color:'var(--t2)'}}>{p.mt ? <><span style={{fontFamily:'"JetBrains Mono",monospace'}}>{fd(p.mt)}</span>{p.md?<><br/><span style={{color:'var(--t3)'}}>{p.md.substring(0,25)}</span></>:null}</> : <span style={{color:'var(--t3)'}}>—</span>}</td>
-                            <td>{isAdmin && <button className="btn btn-sm btn-ghost" style={{fontSize:11,color:'var(--blue)'}} onClick={e=>{e.stopPropagation();openProc(p.id).then(()=>setProcEditMode(true));}}>✏️ Editar</button>}</td>
+                            <td>{isAdmin && <button className="btn btn-sm btn-ghost" style={{fontSize:11,color:'var(--blue)'}} onClick={e=>{e.stopPropagation();openProc(p.id).then(()=>setProcEditMode(true));}}>Editar</button>}</td>
                           </tr>
                         );
                       })}
@@ -1021,7 +1060,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
             <>
               <div className="fr">
                 <input type="text" placeholder="Buscar municipio..." value={muQ} onChange={e=>setMuQ(e.target.value)} style={{maxWidth:280}}/>
-                {isAdmin && <button className="btn btn-sm btnp" onClick={novoMun}>+ Municipio</button>}
+                {isAdmin && <button className="btn btn-sm btnp" onClick={novoMun}>+ Município</button>}
               </div>
               {municipios.filter(m=>!muQ||m.nome.toLowerCase().includes(muQ.toLowerCase())).length === 0
                 ? <div style={{textAlign:'center',padding:48,color:'var(--t3)',border:'1px dashed var(--bdr)',borderRadius:8}}>Nenhum municipio cadastrado.</div>
@@ -1143,7 +1182,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
             <>
               <div className="fr">
                 <input type="text" placeholder="Buscar usuario..." value={usQ} onChange={e=>setUsQ(e.target.value)} style={{maxWidth:280}}/>
-                <button className="btn btn-sm btnp" onClick={()=>openUser(null)}>+ Usuario</button>
+                <button className="btn btn-sm btnp" onClick={()=>openUser(null)}>+ Usuário</button>
               </div>
               <div className="card" style={{padding:0,overflow:'hidden'}}>
                 <table>
@@ -1182,9 +1221,9 @@ export default function DashboardClient({ userNome, userPerfil }) {
             </div>
             <div className="mbd">
               <div className="itabs">
-                {['dados','prazos','tce','hist','anex'].map(t=>(
+                {['dados','prazos','movs','anex'].map(t=>(
                   <button key={t} className={`it${procTab===t?' active':''}`} onClick={()=>setProcTab(t)}>
-                    {{dados:'Dados gerais',prazos:'Prazos',tce:'Movim. TCE',hist:'Historico',anex:'Anexos'}[t]}
+                    {{dados:'Dados Gerais',prazos:'Prazos',movs:'Movimentações',anex:'Anexos'}[t]}
                   </button>
                 ))}
               </div>
@@ -1192,13 +1231,13 @@ export default function DashboardClient({ userNome, userPerfil }) {
               {procTab === 'dados' && (
                 <div className="fgrid">
                   <div className="fg"><label>Processo</label><input value={pForm.proc||''} onChange={e=>setPForm(f=>({...f,proc:e.target.value}))} disabled={!isAdmin}/></div>
-                  <div className="fg"><label>Exercicio</label><input value={pForm.ex||''} onChange={e=>setPForm(f=>({...f,ex:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg"><label>Exercício</label><input value={pForm.ex||''} onChange={e=>setPForm(f=>({...f,ex:e.target.value}))} disabled={!isAdmin}/></div>
                   <div className="fg full"><label>Assunto</label><input value={pForm.ass||''} onChange={e=>setPForm(f=>({...f,ass:e.target.value}))} disabled={!isAdmin}/></div>
-                  <div className="fg"><label>Municipio</label><input value={pForm.mun||''} onChange={e=>setPForm(f=>({...f,mun:e.target.value}))} disabled={!isAdmin}/></div>
-                  <div className="fg"><label>Responsavel / Advogado</label><input value={pForm.resp||''} onChange={e=>setPForm(f=>({...f,resp:e.target.value}))} disabled={!isAdmin}/></div>
-                  <div className="fg"><label>Responsavel interno</label><input value={pForm.ri||''} onChange={e=>setPForm(f=>({...f,ri:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg"><label>Município</label><input value={pForm.mun||''} onChange={e=>setPForm(f=>({...f,mun:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg"><label>Responsável / Advogado</label><input value={pForm.resp||''} onChange={e=>setPForm(f=>({...f,resp:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg"><label>Responsável interno</label><input value={pForm.ri||''} onChange={e=>setPForm(f=>({...f,ri:e.target.value}))} disabled={!isAdmin}/></div>
                   <div className="fg"><label>Etapa atual</label><select value={pForm.et||''} onChange={e=>setPForm(f=>({...f,et:e.target.value}))} disabled={!isAdmin}><option value="">Selecione</option>{ETAPAS.map(e=><option key={e}>{e}</option>)}</select></div>
-                  <div className="fg"><label>Situacao</label><input value={pForm.sit||''} onChange={e=>setPForm(f=>({...f,sit:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg"><label>Situação</label><input value={pForm.sit||''} onChange={e=>setPForm(f=>({...f,sit:e.target.value}))} disabled={!isAdmin}/></div>
                   <div className="fg"><label>Gestor</label><input value={pForm.gestor||''} onChange={e=>setPForm(f=>({...f,gestor:e.target.value}))} disabled={!isAdmin}/></div>
                   <div className="fg"><label>Relator</label>
                     <select value={pForm.relator||''} onChange={e=>setPForm(f=>({...f,relator:e.target.value}))} disabled={!isAdmin}>
@@ -1207,59 +1246,83 @@ export default function DashboardClient({ userNome, userPerfil }) {
                     </select>
                   </div>
                   <div className="fg"><label>Natureza</label><select value={pForm.natureza||''} onChange={e=>setPForm(f=>({...f,natureza:e.target.value}))} disabled={!isAdmin}><option value="">Selecione</option>{NATUREZAS.map(n=><option key={n}>{n}</option>)}</select></div>
-                  <div className="fg"><label>Especie</label><select value={pForm.especie||''} onChange={e=>setPForm(f=>({...f,especie:e.target.value}))} disabled={!isAdmin}><option value="">Selecione</option>{ESPECIES.map(s=><option key={s}>{s}</option>)}</select></div>
-                  <div className="fg full"><label>Acao / Proximo passo</label><input value={pForm.ac||''} onChange={e=>setPForm(f=>({...f,ac:e.target.value}))} disabled={!isAdmin}/></div>
-                  <div className="fg full"><label>Observacoes</label><textarea value={pForm.obs||''} onChange={e=>setPForm(f=>({...f,obs:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg"><label>Espécie</label><select value={pForm.especie||''} onChange={e=>setPForm(f=>({...f,especie:e.target.value}))} disabled={!isAdmin}><option value="">Selecione</option>{ESPECIES.map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div className="fg full"><label>Ação / Próximo passo</label><input value={pForm.ac||''} onChange={e=>setPForm(f=>({...f,ac:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg full"><label>Observações</label><textarea value={pForm.obs||''} onChange={e=>setPForm(f=>({...f,obs:e.target.value}))} disabled={!isAdmin}/></div>
+                  {isAdmin && (
+                    <div className="full" style={{gridColumn:'1/-1'}}>
+                      <div style={{background:pForm.atencao?'#FFF3CD':'var(--s2)',border:pForm.atencao?'2px solid #FFC107':'1px solid var(--bdr)',borderRadius:8,padding:'12px 16px',transition:'all .2s'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:pForm.atencao?10:0}}>
+                          <input type="checkbox" id="chk-atencao" checked={pForm.atencao||false} onChange={e=>setPForm(f=>({...f,atencao:e.target.checked}))} style={{width:16,height:16,cursor:'pointer'}}/>
+                          <label htmlFor="chk-atencao" style={{cursor:'pointer',fontWeight:600,fontSize:13,color:pForm.atencao?'#856404':'var(--t2)'}}>
+                            {pForm.atencao ? 'Processo marcado com ATENÇÃO' : 'Marcar com ATENÇÃO'}
+                          </label>
+                        </div>
+                        {pForm.atencao && (
+                          <input value={pForm.atencao_obs||''} onChange={e=>setPForm(f=>({...f,atencao_obs:e.target.value}))}
+                            placeholder="Descreva o motivo (ex: prazo crítico, cliente solicitou urgência...)"
+                            style={{width:'100%',padding:'8px 10px',border:'1px solid #FFC107',borderRadius:6,fontSize:13,fontFamily:'inherit',background:'#FFFBEE',outline:'none'}}/>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {procTab === 'prazos' && (
                 <>
                   <div className="fgrid">
-                    <div className="fg"><label>Citacao</label><input type="date" value={pForm.cit||''} onChange={e=>setPForm(f=>({...f,cit:e.target.value}))} disabled={!isAdmin}/></div>
+                    <div className="fg"><label>Citação</label><input type="date" value={pForm.cit||''} onChange={e=>setPForm(f=>({...f,cit:e.target.value}))} disabled={!isAdmin}/></div>
                     <div className="fg"><label>Prazo inicial</label><input type="date" value={pForm.pz||''} onChange={e=>setPForm(f=>({...f,pz:e.target.value}))} disabled={!isAdmin}/></div>
                     <div className="fg"><label>Prazo prorrogado</label><input type="date" value={pForm.pr||''} onChange={e=>setPForm(f=>({...f,pr:e.target.value}))} disabled={!isAdmin}/></div>
                     <div className="fg"><label>Prazo Int. Resp.</label><input value={pForm.pi||''} onChange={e=>setPForm(f=>({...f,pi:e.target.value}))} disabled={!isAdmin}/></div>
-                    <div className="fg"><label>Pedir prorrogacao?</label><select value={pForm.pp||'Nao'} onChange={e=>setPForm(f=>({...f,pp:e.target.value}))} disabled={!isAdmin}><option>Nao</option><option>Sim</option></select></div>
+                    <div className="fg"><label>Pedir prorrogacao?</label><select value={pForm.pp||'Não'} onChange={e=>setPForm(f=>({...f,pp:e.target.value}))} disabled={!isAdmin}><option>Não</option><option>Sim</option></select></div>
                     <div className="fg"><label>Dias restantes</label><div style={{padding:'8px 10px',background:'var(--s2)',borderRadius:6,border:'1px solid var(--bdr)'}}><DaysBadge days={du(pForm)}/></div></div>
                   </div>
                   <div style={{background:'var(--bl)',border:'1px solid var(--bm)',borderRadius:6,padding:'10px 14px',marginTop:12,fontSize:12,color:'var(--blue)'}}>Salvar nova prorrogacao registra automaticamente no historico.</div>
                 </>
               )}
 
-              {procTab === 'tce' && (
+              {procTab === 'movs' && (
                 <>
-                  <div className="fgrid">
-                    <div className="fg"><label>Ultima movim. TCE</label><input type="date" value={pForm.mt||''} onChange={e=>setPForm(f=>({...f,mt:e.target.value}))} disabled={!isAdmin}/></div>
-                    <div className="fg full"><label>Descricao</label><input value={pForm.md||''} onChange={e=>setPForm(f=>({...f,md:e.target.value}))} placeholder="ex: Acordao n 123 publicado..." disabled={!isAdmin}/></div>
-                  </div>
                   {isAdmin && (
-                    <div style={{marginTop:16,paddingTop:16,borderTop:'1px solid var(--bdr)'}}>
-                      <div style={{fontSize:12,fontWeight:600,color:'var(--t2)',marginBottom:12}}>Registrar nova movimentacao TCE</div>
-                      <div className="fgrid">
-                        <div className="fg"><label>Data</label><input type="date" value={tceForm.data} onChange={e=>setTceForm(f=>({...f,data:e.target.value}))}/></div>
-                        <div className="fg full"><label>Descricao</label><input value={tceForm.descricao} onChange={e=>setTceForm(f=>({...f,descricao:e.target.value}))} placeholder="ex: Acordao 456/2025 publicado"/></div>
+                    <div style={{background:'var(--s2)',border:'1px solid var(--bdr)',borderRadius:8,padding:16,marginBottom:20}}>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 2fr',gap:12,marginBottom:12}}>
+                        <div className="fg">
+                          <label>Tipo</label>
+                          <select value={histForm.tipo} onChange={e=>setHistForm(f=>({...f,tipo:e.target.value}))}>
+                            <option>Movimentação TCE</option>
+                            <option>Prorrogação de prazo</option>
+                            <option>Defesa protocolada</option>
+                            <option>Embargo protocolado</option>
+                            <option>Minuta elaborada</option>
+                            <option>Contato com responsável</option>
+                            <option>Reunião</option>
+                            <option>Movimentação interna</option>
+                            <option>Outro</option>
+                          </select>
+                        </div>
+                        <div className="fg">
+                          <label>Data</label>
+                          <input type="date" value={histForm.data} onChange={e=>setHistForm(f=>({...f,data:e.target.value}))}/>
+                        </div>
+                        <div className="fg">
+                          <label>Descrição</label>
+                          <input value={histForm.descricao} onChange={e=>setHistForm(f=>({...f,descricao:e.target.value}))} placeholder="Descreva a movimentação..."/>
+                        </div>
                       </div>
-                      <button className="btn btn-sm" style={{marginTop:8}} onClick={addTce}>Registrar</button>
+                      <div style={{display:'flex',alignItems:'center',gap:12}}>
+                        <label className="btn btn-sm" style={{cursor:'pointer',background:'var(--surf)'}}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                          Anexar arquivo
+                          <input type="file" style={{display:'none'}} onChange={e=>setHistForm(f=>({...f,_file:e.target.files[0]}))}/>
+                        </label>
+                        {histForm._file && <span style={{fontSize:12,color:'var(--t2)'}}>{histForm._file.name}</span>}
+                        <button className="btn btn-sm btnp" style={{marginLeft:'auto'}} onClick={addHist}>+ Registrar</button>
+                      </div>
                     </div>
                   )}
-                  <div style={{marginTop:16}}>
-                    <Timeline items={procHist.filter(h=>h.tce)} emptyMsg="Nenhuma movimentacao TCE registrada."/>
-                  </div>
-                </>
-              )}
-
-              {procTab === 'hist' && (
-                <>
-                  {isAdmin && (
-                    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'flex-end',marginBottom:16,paddingBottom:16,borderBottom:'1px solid var(--bdr)'}}>
-                      <div className="fg" style={{flex:1,minWidth:150}}><label>Tipo</label><select value={histForm.tipo} onChange={e=>setHistForm(f=>({...f,tipo:e.target.value}))}><option>Prorrogacao de prazo</option><option>Defesa protocolada</option><option>Embargo protocolado</option><option>Minuta elaborada</option><option>Contato com responsavel</option><option>Reuniao</option><option>Movimentacao interna</option><option>Outro</option></select></div>
-                      <div className="fg" style={{flex:'0 0 140px'}}><label>Data</label><input type="date" value={histForm.data} onChange={e=>setHistForm(f=>({...f,data:e.target.value}))}/></div>
-                      <div className="fg" style={{flex:2,minWidth:200}}><label>Descricao</label><input value={histForm.descricao} onChange={e=>setHistForm(f=>({...f,descricao:e.target.value}))} placeholder="Descreva o acontecimento..."/></div>
-                      <button className="btn btn-sm btnp" onClick={addHist}>+ Adicionar</button>
-                    </div>
-                  )}
-                  <Timeline items={procHist} emptyMsg="Nenhum registro no historico ainda."/>
+                  <Timeline items={procHist} emptyMsg="Nenhuma movimentação registrada ainda."/>
                 </>
               )}
 
@@ -1307,7 +1370,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
             </div>
             <div className="mft">
               <button className="btn btn-sm" onClick={()=>setProcModal(null)}>Fechar</button>
-              {isAdmin && <><button className="btn btn-sm btnd" onClick={deleteProc}>Excluir</button><button className="btn btn-sm" onClick={gerarProrrogacao} style={{background:'var(--gl)',color:'var(--grn)',borderColor:'var(--grn)'}}>Gerar Prorrogação</button><button className="btn btn-sm btnp" onClick={saveProc}>Salvar alteracoes</button></>}
+              {isAdmin && <><button className="btn btn-sm btnd" onClick={deleteProc}>Excluir</button><button className="btn btn-sm btnp" onClick={saveProc}>Salvar alterações</button></>}
             </div>
           </div>
         </div>
@@ -1338,7 +1401,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                   <div className="fg full"><label>Nome *</label><input value={mForm.nome||''} onChange={e=>setMForm(f=>({...f,nome:e.target.value}))} disabled={!isAdmin}/></div>
                   <div className="fg"><label>Tipo</label><select value={mForm.tipo||'Prefeitura'} onChange={e=>setMForm(f=>({...f,tipo:e.target.value}))} disabled={!isAdmin}><option>Prefeitura</option><option>Camara Municipal</option><option>Secretaria</option><option>Outro</option></select></div>
                           <div className="fg full"><label>URL da logo</label><input value={mForm.logo||''} onChange={e=>setMForm(f=>({...f,logo:e.target.value}))} placeholder="https://..." disabled={!isAdmin}/></div>
-                  <div className="fg full"><label>Observacoes</label><textarea value={mForm.obs||''} onChange={e=>setMForm(f=>({...f,obs:e.target.value}))} disabled={!isAdmin}/></div>
+                  <div className="fg full"><label>Observações</label><textarea value={mForm.obs||''} onChange={e=>setMForm(f=>({...f,obs:e.target.value}))} disabled={!isAdmin}/></div>
                   {isAdmin && <div className="full"><button className="btn btn-sm btnp" onClick={saveMun}>Salvar perfil</button></div>}
                 </div>
               )}
@@ -1495,7 +1558,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                 <div className="fg"><label>Tipo de contrato</label><select value={gForm.contratoTipo||'Prefeitura'} onChange={e=>setGForm(f=>({...f,contratoTipo:e.target.value}))}><option>Prefeitura</option><option>Camara Municipal</option><option>Pessoal (direto com gestor)</option></select></div>
                 <div className="fg"><label>Inicio do contrato</label><input type="date" value={gForm.inicio||''} onChange={e=>setGForm(f=>({...f,inicio:e.target.value}))}/></div>
                 <div className="fg"><label>Status</label><select value={gForm.status||'Ativo'} onChange={e=>setGForm(f=>({...f,status:e.target.value}))}><option>Ativo</option><option>Inativo</option><option>Monitoramento</option></select></div>
-                <div className="fg full"><label>Observacoes</label><textarea value={gForm.obs||''} onChange={e=>setGForm(f=>({...f,obs:e.target.value}))}/></div>
+                <div className="fg full"><label>Observações</label><textarea value={gForm.obs||''} onChange={e=>setGForm(f=>({...f,obs:e.target.value}))}/></div>
                 {gestorModal?.id && (
                   <div className="fg full">
                     <label>Assinatura (PNG) — usada na prorrogação de prazo</label>
@@ -1629,14 +1692,14 @@ export default function DashboardClient({ userNome, userPerfil }) {
                     <div className="fg"><label>Exercicio financeiro *</label><input type="number" value={npForm.ex||''} onChange={e=>setNpForm(f=>({...f,ex:e.target.value}))} placeholder="ex: 2024" min="2000" max="2099"/></div>
                     <div className="fg full"><label>Assunto</label><input value={npForm.ass||''} onChange={e=>setNpForm(f=>({...f,ass:e.target.value}))} placeholder="ex: Prestacao de contas anual de governo"/></div>
                     <div className="fg"><label>Natureza</label><select value={npForm.natureza||''} onChange={e=>setNpForm(f=>({...f,natureza:e.target.value}))}><option value="">Selecione</option>{NATUREZAS.map(n=><option key={n}>{n}</option>)}</select></div>
-                    <div className="fg"><label>Especie</label><select value={npForm.especie||''} onChange={e=>setNpForm(f=>({...f,especie:e.target.value}))}><option value="">Selecione</option>{ESPECIES.map(s=><option key={s}>{s}</option>)}</select></div>
+                    <div className="fg"><label>Espécie</label><select value={npForm.especie||''} onChange={e=>setNpForm(f=>({...f,especie:e.target.value}))}><option value="">Selecione</option>{ESPECIES.map(s=><option key={s}>{s}</option>)}</select></div>
                     <div className="fg"><label>Relator</label>
                       <select value={npForm.relator||''} onChange={e=>setNpForm(f=>({...f,relator:e.target.value}))}>
                         <option value="">Selecione...</option>
                         {conselheiros.filter(c=>c.ativo).map(c=><option key={c.id} value={c.titulo}>{c.titulo}</option>)}
                       </select>
                     </div>
-                    <div className="fg"><label>Responsavel / Advogado</label><input value={npForm.resp||''} onChange={e=>setNpForm(f=>({...f,resp:e.target.value}))}/></div>
+                    <div className="fg"><label>Responsável / Advogado</label><input value={npForm.resp||''} onChange={e=>setNpForm(f=>({...f,resp:e.target.value}))}/></div>
                   </div>
                 </>
               )}
@@ -1775,7 +1838,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
               {consModal?.id && <button className="btn btn-sm btnd" onClick={async()=>{
                 await api(`/api/conselheiros/${consModal.id}`,{method:'DELETE'});
                 setConselheiros(prev=>prev.filter(c=>c.id!==consModal.id));
-                setConsModal(undefined); showToast('Excluido');
+                setConsModal(undefined); showToast('Excluído');
               }}>Excluir</button>}
               <button className="btn btn-sm" onClick={()=>setConsModal(undefined)}>Fechar</button>
               <button className="btn btn-sm btnp" onClick={async()=>{
@@ -1805,6 +1868,12 @@ export default function DashboardClient({ userNome, userPerfil }) {
               <div>
                 <h2>Processo {procView.proc}</h2>
                 <div className="mhd-sub">{procView.tipo_ente||''} {procView.mun||'—'} · Exercício {procView.ex||'—'}{procView.natureza?' · '+procView.natureza:''}</div>
+                {procView.atencao && (
+                  <div style={{marginTop:6,display:'flex',alignItems:'center',gap:8,background:'#FFF3CD',border:'1px solid #FFC107',borderRadius:6,padding:'5px 10px',fontSize:12,color:'#856404',fontWeight:500}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#856404" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    ATENÇÃO{procView.atencao_obs ? ': ' + procView.atencao_obs : ''}
+                  </div>
+                )}
               </div>
               <button className="xb" onClick={()=>setProcView(null)}>✕</button>
             </div>
@@ -1910,7 +1979,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Editar
               </button>
-              <button className="btn btn-sm" onClick={()=>{const tmp=procModal;setProcModal(procView);printProc();setProcModal(tmp);}}>
+              <button className="btn btn-sm" onClick={()=>printProc(procView)}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                 Imprimir
               </button>
