@@ -20,7 +20,7 @@ const ETAPA_MAP = {
   'Em Minuta':'et-minuta','Minuta Elaborada':'et-minuta',
   'Aguardando Pauta':'et-pauta','Sustentacao Oral':'et-oral',
   'Retirado de Pauta':'et-pauta','Aguardando Publicacao':'et-pauta',
-  'Julgado — Regular':'et-julgado-r','Julgado — Irregular':'et-julgado-i','Arquivado':'et-arch',
+  'Julgado — Regular':'et-julgado-r','Julgado — Irregular':'et-julgado-i','Arquivado':'et-arch','Trânsito em Julgado':'et-transito',
   'Def. Prot.':'et-def-prot','Emb. Prot.':'et-emb-prot','AGUARD. CIT.':'et-ag-cit','AGUARD. PUBLI':'et-pauta','RET. DE PAUTA':'et-pauta',
 };
 const EtapaBadge = ({ et }) => {
@@ -35,7 +35,8 @@ const DaysBadge = ({ days }) => {
   return <span className="badge bgr">{days}d</span>;
 };
 
-const ETAPAS = ['Aguardando Citacao','Citado — Em Prazo','Em Defesa','Defesa Protocolada','Prorrogacao Solicitada','Prorrogacao Concedida','Em Embargos','Embargo Protocolado','Em Minuta','Minuta Elaborada','Aguardando Pauta','Sustentacao Oral','Retirado de Pauta','Aguardando Publicacao','Julgado — Regular','Julgado — Irregular','Arquivado'];
+const ETAPAS = ['Aguardando Citacao','Citado — Em Prazo','Em Defesa','Defesa Protocolada','Prorrogacao Solicitada','Prorrogacao Concedida','Em Embargos','Embargo Protocolado','Em Minuta','Minuta Elaborada','Aguardando Pauta','Sustentacao Oral','Retirado de Pauta','Aguardando Publicacao','Julgado — Regular','Julgado — Irregular','Arquivado','Trânsito em Julgado'];
+const isTransito = p => p.et === 'Trânsito em Julgado';
 const NATUREZAS = ['Prestacao de Contas','Representacao','Denuncia','Tomada de Contas Especial','Fiscalizacao','Consulta','Recurso','Outros'];
 const ESPECIES = ['Prestacao de Contas Anual de Governo','Prestacao de Contas Anual de Gestores','Tomada de Contas de Gestores','Representacao — Licitacao','Representacao — Contratos','Representacao — Pessoal','Fiscalizacao de Obras','Fiscalizacao de Contratos','Denuncia','Consulta Juridica','Recurso de Revisao','Embargo de Declaracao','Outros'];
 const TL_COLORS = {'Prorrogacao de prazo':{dot:'#B45309',cls:'ba',lbl:'PRAZO'},'Defesa protocolada':{dot:'#1B7A4A',cls:'bg',lbl:'DEFESA'},'Embargo protocolado':{dot:'#5B2D8E',cls:'bpu',lbl:'EMBARGO'},'Minuta elaborada':{dot:'#0F766E',cls:'btl',lbl:'MINUTA'},'Movimentacao TCE':{dot:'#1B6EC2',cls:'bb',lbl:'TCE'},'Contato com responsavel':{dot:'#0F766E',cls:'btl',lbl:'CONTATO'},'Reuniao':{dot:'#0F766E',cls:'btl',lbl:'REUNIAO'},'Movimentacao interna':{dot:'#6C757D',cls:'bgr',lbl:'INTERNO'},'Outro':{dot:'#ADB5BD',cls:'bgr',lbl:'OUTRO'}};
@@ -119,6 +120,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
   const [page, setPage] = useState('dashboard');
   const [consModal, setConsModal] = useState(undefined);
   const [consForm, setConsForm] = useState({ nome: '', tipo: 'Conselheiro' });
+  const [atencaoResolve, setAtencaoResolve] = useState(null); // {processo, obs, file}
   const [loading, setLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [toast, setToast] = useState({ msg: '', type: 'ok' });
@@ -248,7 +250,19 @@ export default function DashboardClient({ userNome, userPerfil }) {
     if (psSt === 'sp') return !p.pz && !p.pr;
     if (psSt === 'ag') return !p.cit && !p.pz && !p.pr;
     return true;
-  }).sort((a,b) => { const da=du(a),db=du(b); if(da===null&&db===null)return 0; if(da===null)return 1; if(db===null)return-1; return da-db; });
+  }).sort((a,b) => {
+    const ta = isTransito(a), tb = isTransito(b);
+    if (ta && !tb) return 1;   // transito goes to bottom
+    if (!ta && tb) return -1;
+    const aa = a.atencao, ab = b.atencao;
+    if (aa && !ab) return -1;  // atencao goes to top
+    if (!aa && ab) return 1;
+    const da=du(a),db=du(b);
+    if(da===null&&db===null)return 0;
+    if(da===null)return 1;
+    if(db===null)return-1;
+    return da-db;
+  });
 
   const etapasUniq = [...new Set(processos.map(p=>p.et).filter(Boolean))].sort();
   const munsUniq = [...new Set(processos.map(p=>p.mun).filter(Boolean))].sort();
@@ -621,6 +635,30 @@ export default function DashboardClient({ userNome, userPerfil }) {
     w.document.close();
   }
 
+  async function resolveAtencao(proc, obs, file) {
+    try {
+      // Add historico entry
+      await api(`/api/processos/${proc.id}/historico`, {
+        method: 'POST',
+        body: { tipo: 'Atenção concluída', data: today(), descricao: obs || 'Demanda urgente resolvida.', tce: false }
+      });
+      // Upload file if provided
+      if (file) {
+        const fd2 = new FormData(); fd2.append('file', file);
+        try { await api(`/api/processos/${proc.id}/anexos`, { method: 'POST', body: fd2 }); } catch {}
+      }
+      // Clear atencao flag
+      await api(`/api/processos/${proc.id}`, {
+        method: 'PUT',
+        body: { ...proc, ri: proc.resp_int, atencao: false, atencao_obs: '' }
+      });
+      const procs = await api('/api/processos');
+      setProcessos(procs);
+      setAtencaoResolve(null);
+      showToast('Atenção concluída e registrada no histórico');
+    } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+  }
+
   async function gerarProrrogacao() {
     const p = procModal;
     if (!p) return;
@@ -845,10 +883,13 @@ export default function DashboardClient({ userNome, userPerfil }) {
                       <strong style={{color:'#856404',fontSize:13}}>{comAtencao.length} processo(s) requerem ATENÇÃO</strong>
                     </div>
                     {comAtencao.map(p=>(
-                      <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'5px 0',borderTop:'1px solid rgba(133,100,4,.15)',cursor:'pointer'}} onClick={()=>openProcView(p)}>
-                        <span style={{fontFamily:'"JetBrains Mono",monospace',fontSize:12,fontWeight:700,color:'#856404',minWidth:90}}>{p.proc}</span>
-                        <span style={{fontSize:12,color:'#856404'}}>{p.mun||''}</span>
-                        {p.atencao_obs && <span style={{fontSize:12,color:'#6d5204',fontStyle:'italic'}}>— {p.atencao_obs}</span>}
+                      <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'5px 0',borderTop:'1px solid rgba(133,100,4,.15)'}}>
+                        <span style={{fontFamily:'"JetBrains Mono",monospace',fontSize:12,fontWeight:700,color:'#856404',minWidth:90,cursor:'pointer'}} onClick={()=>openProcView(p)}>{p.proc}</span>
+                        <span style={{fontSize:12,color:'#856404',flex:1,cursor:'pointer'}} onClick={()=>openProcView(p)}>{p.mun||''}{p.atencao_obs ? ' — ' + p.atencao_obs : ''}</span>
+                        <button className="btn btn-sm" style={{flexShrink:0,background:'var(--gl)',color:'var(--grn)',borderColor:'var(--grn)',fontSize:11}}
+                          onClick={()=>setAtencaoResolve({proc:p,obs:'',file:null})}>
+                          Concluir
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -1801,6 +1842,53 @@ export default function DashboardClient({ userNome, userPerfil }) {
             <div className="mft">
               <button className="btn btn-sm" onClick={()=>setRptPreview(null)}>Fechar</button>
               <button className="btn btn-sm btnp" onClick={printRpt}>Imprimir / Salvar PDF</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL: RESOLVER ATENÇÃO ══════════════════════════════════════ */}
+      {atencaoResolve && (
+        <div className="modal-bg open">
+          <div className="modal" style={{maxWidth:480}}>
+            <div className="mhd">
+              <div>
+                <h2>Concluir ATENÇÃO</h2>
+                <div className="mhd-sub">Processo {atencaoResolve.proc.proc} · {atencaoResolve.proc.mun}</div>
+              </div>
+              <button className="xb" onClick={()=>setAtencaoResolve(null)}>✕</button>
+            </div>
+            <div className="mbd">
+              {atencaoResolve.proc.atencao_obs && (
+                <div style={{background:'#FFF3CD',border:'1px solid #FFC107',borderRadius:6,padding:'8px 12px',marginBottom:16,fontSize:12,color:'#856404'}}>
+                  <strong>Motivo original:</strong> {atencaoResolve.proc.atencao_obs}
+                </div>
+              )}
+              <div className="fg" style={{marginBottom:14}}>
+                <label>O que foi feito? *</label>
+                <textarea
+                  value={atencaoResolve.obs}
+                  onChange={e=>setAtencaoResolve(r=>({...r,obs:e.target.value}))}
+                  placeholder="Descreva como a demanda foi resolvida..."
+                  style={{minHeight:90}}
+                />
+              </div>
+              <div className="fg">
+                <label>Anexar documento (opcional)</label>
+                <label className="btn btn-sm" style={{cursor:'pointer',marginTop:4}}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  Selecionar arquivo
+                  <input type="file" style={{display:'none'}} onChange={e=>setAtencaoResolve(r=>({...r,file:e.target.files[0]}))}/>
+                </label>
+                {atencaoResolve.file && <span style={{fontSize:12,color:'var(--t2)',marginLeft:10}}>{atencaoResolve.file.name}</span>}
+              </div>
+            </div>
+            <div className="mft">
+              <button className="btn btn-sm" onClick={()=>setAtencaoResolve(null)}>Cancelar</button>
+              <button className="btn btn-sm btnp" onClick={()=>{
+                if(!atencaoResolve.obs){showToast('Descreva o que foi feito','err');return;}
+                resolveAtencao(atencaoResolve.proc, atencaoResolve.obs, atencaoResolve.file);
+              }}>Confirmar conclusão</button>
             </div>
           </div>
         </div>
