@@ -10,7 +10,7 @@ const fd = s => { if (!s) return '—'; const d = pd(s); return d ? d.toLocaleDa
 const today = () => new Date().toISOString().split('T')[0];
 const du = p => { const dl = pd(p.pr) || pd(p.pz); if (!dl) return null; const n = new Date(); n.setHours(0,0,0,0); return Math.round((dl - n) / 86400000); };
 const edl = p => pd(p.pr) || pd(p.pz);
-const mpct = m => { const s = pd(m.inicio), e = pd(m.fim), n = new Date(); if (!s||!e) return 50; return Math.max(0, Math.min(100, Math.round((n-s)/(e-s)*100))); };
+const mpct = m => { const s=parseInt(m.inicio||0), e=parseInt(m.fim||0), n=new Date().getFullYear(); if(!s||!e||e<=s) return 50; return Math.max(0,Math.min(100,Math.round((n-s)/(e-s)*100))); };
 
 const ETAPA_MAP = {
   'Aguardando Citacao':'et-ag-cit','Citado — Em Prazo':'et-em-prazo',
@@ -153,6 +153,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
   const [rptCo, setRptCo] = useState('A');
   const [rptMun, setRptMun] = useState('');
   const [rptPreview, setRptPreview] = useState(null);
+  const [calMes, setCalMes] = useState(() => { const d=new Date(); return {y:d.getFullYear(),m:d.getMonth()}; });
 
   const [novoModal, setNovoModal] = useState(false);
   const [npStep, setNpStep] = useState(1);
@@ -167,8 +168,9 @@ export default function DashboardClient({ userNome, userPerfil }) {
 
   // Mandatos/contatos/demandas add forms
   const [mandForm, setMandForm] = useState({ gestor:'', inicio:'', fim:'', escopo:'', contratocom:'Prefeitura', status:'Ativo' });
+  const anoAtual = new Date().getFullYear();
   const [ctForm, setCtForm] = useState({ nome:'', cargo:'', tel:'', email:'' });
-  const [dmForm, setDmForm] = useState({ tipo:'Defesa em processo TCE', data:'', descricao:'', status:'Em andamento', procvinc:'' });
+  const [dmForm, setDmForm] = useState({ tipo:'Lei', numero:'', descricao:'', url:'' });
 
   // Historico form
   const [histForm, setHistForm] = useState({ tipo:'Defesa protocolada', data:'', descricao:'' });
@@ -408,13 +410,13 @@ export default function DashboardClient({ userNome, userPerfil }) {
   }
 
   async function addDemanda() {
-    if (!dmForm.descricao) return;
+    if (!dmForm.numero && !dmForm.descricao) return;
     try {
-      await api(`/api/municipios/${munModal.id}/demandas`, { method: 'POST', body: dmForm });
+      await api(`/api/municipios/${munModal.id}/demandas`, { method: 'POST', body: { tipo: dmForm.tipo, descricao: dmForm.descricao, procvinc: dmForm.numero, status: dmForm.url } });
       const muns = await api('/api/municipios');
       setMunicipios(muns);
       setMunModal(muns.find(x => x.id === munModal.id));
-      setDmForm({ tipo:'Defesa em processo TCE', data:'', descricao:'', status:'Em andamento', procvinc:'' });
+      setDmForm({ tipo:'Lei', numero:'', descricao:'', url:'' });
       showToast('Demanda registrada');
     } catch(e) { showToast('Erro', 'err'); }
   }
@@ -804,13 +806,13 @@ export default function DashboardClient({ userNome, userPerfil }) {
                 <div className="mc r"><div className="mc-label">Urgentes (7 dias)</div><div className="mc-val">{urg.length}</div><div className="mc-sub">Acao imediata</div></div>
                 <div className="mc a"><div className="mc-label">Vencem em 30 dias</div><div className="mc-val">{m30.length}</div><div className="mc-sub">Monitorar</div></div>
                 <div className="mc b"><div className="mc-label">Total de processos</div><div className="mc-val">{processos.length}</div><div className="mc-sub">{mns.size} municipios</div></div>
-                <div className="mc g"><div className="mc-label">Municipios ativos</div><div className="mc-val">{municipios.filter(m=>(m.mandatos||[]).some(md=>md.status==='Ativo')).length}</div><div className="mc-sub">{municipios.length} municipios cadastrados</div></div>
+                <div className="mc g"><div className="mc-label">Municipios ativos</div><div className="mc-val">{municipios.filter(m=>(m.mandatos||[]).some(md=>{const f=parseInt((md.fim||'0').substring(0,4));return f>=2026;})).length}</div><div className="mc-sub">{municipios.length} municipios cadastrados</div></div>
               </div>
               <div className="kpi-row">
                 <div className="kpi-mini"><div className="kpi-icon" style={{background:'var(--rl)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div><div className="kpi-val" style={{color:'var(--red)'}}>{ov.length}</div><div className="kpi-lbl">Prazos vencidos</div></div></div>
                 <div className="kpi-mini"><div className="kpi-icon" style={{background:'var(--al)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amb)" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div><div className="kpi-val" style={{color:'var(--amb)'}}>{vencHoje.length}</div><div className="kpi-lbl">Vencem hoje</div></div></div>
                 <div className="kpi-mini"><div className="kpi-icon" style={{background:'var(--pl)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pur)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div className="kpi-val" style={{color:'var(--pur)'}}>{prorr.length}</div><div className="kpi-lbl">Com prorrogacao</div></div></div>
-                <div className="kpi-mini"><div className="kpi-icon" style={{background:'var(--gl)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg></div><div><div className="kpi-val" style={{color:'var(--grn)'}}>{julgados.length}</div><div className="kpi-lbl">Julgados</div></div></div>
+                <div className="kpi-mini"><div className="kpi-icon" style={{background:'var(--gl)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div><div className="kpi-val" style={{color:'var(--grn)'}}>{municipios.length}</div><div className="kpi-lbl">Municipios</div></div></div>
               </div>
               <div style={{marginBottom:14}}>
                 {ov.length > 0 && <div className="alrt r"><div><strong>{ov.length} processo(s) com prazo vencido</strong>{ov.slice(0,5).map(p=>p.proc).join(' · ')}{ov.length>5?` e mais ${ov.length-5}...`:''}</div></div>}
@@ -900,6 +902,71 @@ export default function DashboardClient({ userNome, userPerfil }) {
               <div className="fr">
                 <select value={psMu} onChange={e=>setPsMu(e.target.value)}><option value="">Todos municipios</option>{munsUniq.map(m=><option key={m}>{m}</option>)}</select>
               </div>
+              {/* Calendário */}
+              {(() => {
+                const { y, m } = calMes;
+                const mNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+                const firstDay = new Date(y, m, 1).getDay();
+                const daysInMonth = new Date(y, m+1, 0).getDate();
+                const today2 = new Date(); today2.setHours(0,0,0,0);
+                // Map deadlines to days
+                const deadlineMap = {};
+                processos.filter(p => !psMu || p.mun === psMu).forEach(p => {
+                  const dl = edl(p);
+                  if (!dl) return;
+                  if (dl.getFullYear() === y && dl.getMonth() === m) {
+                    const day = dl.getDate();
+                    if (!deadlineMap[day]) deadlineMap[day] = [];
+                    deadlineMap[day].push(p);
+                  }
+                });
+                const cells = [];
+                for (let i = 0; i < firstDay; i++) cells.push(null);
+                for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+                return (
+                  <div className="card" style={{marginBottom:16}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+                      <button className="btn btn-sm btn-ghost" onClick={()=>setCalMes(({y,m})=>m===0?{y:y-1,m:11}:{y,m:m-1})}>← Anterior</button>
+                      <div style={{fontSize:15,fontWeight:600}}>{mNames[m]} {y}</div>
+                      <button className="btn btn-sm btn-ghost" onClick={()=>setCalMes(({y,m})=>m===11?{y:y+1,m:0}:{y,m:m+1})}>Próximo →</button>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
+                      {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d=>(
+                        <div key={d} style={{textAlign:'center',fontSize:10,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',padding:'4px 0'}}>{d}</div>
+                      ))}
+                      {cells.map((day, i) => {
+                        if (!day) return <div key={i}/>;
+                        const procs = deadlineMap[day] || [];
+                        const thisDate = new Date(y, m, day); thisDate.setHours(0,0,0,0);
+                        const isToday = thisDate.getTime() === today2.getTime();
+                        const isUrgent = procs.some(p => { const d = du(p); return d !== null && d >= 0 && d <= 7; });
+                        const isWarn = procs.some(p => { const d = du(p); return d !== null && d >= 0 && d <= 30; });
+                        const isOverdue = procs.some(p => (du(p)||0) < 0);
+                        const bg = isOverdue ? 'rgba(192,57,43,.12)' : isUrgent ? 'rgba(192,57,43,.08)' : isWarn ? 'rgba(245,158,11,.08)' : procs.length ? 'var(--bl)' : 'transparent';
+                        const border = isToday ? '2px solid var(--blue)' : procs.length ? '1px solid var(--bm)' : '1px solid transparent';
+                        return (
+                          <div key={day} style={{minHeight:64,borderRadius:6,padding:'4px 6px',background:bg,border,cursor:procs.length?'pointer':'default',position:'relative'}}
+                            onClick={()=>procs.length>0 && setProcView(procs[0])}>
+                            <div style={{fontSize:11,fontWeight:isToday?700:400,color:isToday?'var(--blue)':'var(--tx)',marginBottom:2}}>{day}</div>
+                            {procs.slice(0,3).map(p=>(
+                              <div key={p.id} style={{fontSize:9,fontWeight:600,background:du(p)<0?'var(--red)':du(p)<=7?'var(--red)':du(p)<=30?'#F59E0B':'var(--blue)',color:'#fff',borderRadius:3,padding:'1px 4px',marginBottom:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}
+                                onClick={e=>{e.stopPropagation();setProcView(p);}}>
+                                {p.proc}
+                              </div>
+                            ))}
+                            {procs.length > 3 && <div style={{fontSize:9,color:'var(--t3)'}}>+{procs.length-3}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{display:'flex',gap:16,marginTop:12,fontSize:11,color:'var(--t2)'}}>
+                      <span><span style={{display:'inline-block',width:10,height:10,borderRadius:2,background:'var(--red)',marginRight:4}}/>Urgente/Vencido</span>
+                      <span><span style={{display:'inline-block',width:10,height:10,borderRadius:2,background:'#F59E0B',marginRight:4}}/>30 dias</span>
+                      <span><span style={{display:'inline-block',width:10,height:10,borderRadius:2,background:'var(--blue)',marginRight:4}}/>Com prazo</span>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="card" style={{padding:0,overflow:'hidden'}}>
                 <div className="tw">
                   <table>
@@ -953,7 +1020,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                             {am&&<div style={{fontSize:12,color:'var(--blue)',marginTop:4,fontWeight:500}}>{am.gestor}</div>}
                           </div>
                         </div>
-                        {am&&<div className="mandbar"><div className="mandinfo"><span>Mandato</span><span>{fd(am.inicio)} – {fd(am.fim)}</span></div><div className="mandtrack"><div className="mandfill" style={{width:`${mpct(am)}%`}}/></div></div>}
+                        {am&&<div className="mandbar"><div className="mandinfo"><span>Contrato</span><span>{am.inicio||'?'} – {am.fim||'?'}</span></div><div className="mandtrack"><div className="mandfill" style={{width:`${mpct(am)}%`}}/></div></div>}
                         <div className="mstats">
                           <div className="mstat"><div className="mstat-l">Processos</div><div className="mstat-v">{procs.length}</div></div>
                           <div className="mstat" style={urgM>0?{background:'var(--al)',borderColor:'#FFD54F'}:{}}><div className="mstat-l">Prox. 30d</div><div className="mstat-v" style={urgM>0?{color:'var(--amb)'}:{}}>{urgM}</div></div>
@@ -1242,7 +1309,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
               <div className="itabs">
                 {['perfil','mandato','contatos','demandas','procs'].map(t=>(
                   <button key={t} className={`it${munTab===t?' active':''}`} onClick={()=>setMunTab(t)}>
-                    {{perfil:'Perfil',mandato:'Mandatos',contatos:'Contatos',demandas:'Demandas',procs:`Processos`}[t]}
+                    {{perfil:'Perfil',mandato:'Contratos',contatos:'Equipe',demandas:'Legislacoes',procs:`Processos`}[t]}
                   </button>
                 ))}
               </div>
@@ -1269,7 +1336,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                           <div style={{fontSize:14,fontWeight:600}}>{md.gestor}</div>
                           <span className={`badge ${sc[md.status]||'bgr'}`}>{md.status}</span>
                         </div>
-                        <div style={{fontSize:12,color:'var(--t2)',marginBottom:3}}>{fd(md.inicio)} → {fd(md.fim)} · {md.contratocom}</div>
+                        <div style={{fontSize:12,color:'var(--t2)',marginBottom:3}}>{md.inicio||'?'} → {md.fim||'?'} · {md.contratocom}</div>
                         <div style={{fontSize:12,color:'var(--t3)',marginBottom:8}}>{md.escopo||''}</div>
                         <div className="mandbar"><div className="mandinfo"><span>Progresso</span><span>{mpct(md)}%</span></div><div className="mandtrack"><div className="mandfill" style={{width:`${mpct(md)}%`}}/></div></div>
                       </div>
@@ -1280,8 +1347,8 @@ export default function DashboardClient({ userNome, userPerfil }) {
                       <div style={{fontSize:11,fontWeight:600,color:'var(--t2)',marginBottom:12,textTransform:'uppercase',letterSpacing:'.06em'}}>Adicionar mandato</div>
                       <div className="fgrid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
                         <div className="fg"><label>Gestor</label><input value={mandForm.gestor} onChange={e=>setMandForm(f=>({...f,gestor:e.target.value}))} placeholder="Nome do prefeito/presidente"/></div>
-                        <div className="fg"><label>Inicio</label><input type="date" value={mandForm.inicio} onChange={e=>setMandForm(f=>({...f,inicio:e.target.value}))}/></div>
-                        <div className="fg"><label>Fim</label><input type="date" value={mandForm.fim} onChange={e=>setMandForm(f=>({...f,fim:e.target.value}))}/></div>
+                        <div className="fg"><label>Ano de início</label><input type="number" value={mandForm.inicio} onChange={e=>setMandForm(f=>({...f,inicio:e.target.value}))} placeholder={String(anoAtual)} min="2000" max="2100"/></div>
+                        <div className="fg"><label>Ano de término</label><input type="number" value={mandForm.fim} onChange={e=>setMandForm(f=>({...f,fim:e.target.value}))} placeholder={String(anoAtual+3)} min="2000" max="2100"/></div>
                         <div className="fg full"><label>Escopo</label><input value={mandForm.escopo} onChange={e=>setMandForm(f=>({...f,escopo:e.target.value}))} placeholder="ex: Acompanhamento processos TCE 2021-2024"/></div>
                         <div className="fg"><label>Contrato com</label><select value={mandForm.contratocom} onChange={e=>setMandForm(f=>({...f,contratocom:e.target.value}))}><option>Prefeitura</option><option>Camara</option><option>Gestor diretamente</option></select></div>
                         <div className="fg"><label>Status</label><select value={mandForm.status} onChange={e=>setMandForm(f=>({...f,status:e.target.value}))}><option>Ativo</option><option>Encerrado</option><option>Monitoramento</option></select></div>
@@ -1304,13 +1371,13 @@ export default function DashboardClient({ userNome, userPerfil }) {
                       {isAdmin && <button className="btn btn-sm btn-ghost" style={{color:'var(--red)'}} onClick={()=>rmContato(c.id)}>Remover</button>}
                     </div>
                   ))}
-                  {!(munModal.contatos||[]).length && <div style={{color:'var(--t3)',fontSize:13,marginBottom:16}}>Nenhum contato cadastrado.</div>}
+                  {!(munModal.contatos||[]).length && <div style={{color:'var(--t3)',fontSize:13,marginBottom:16}}>Nenhum membro da equipe cadastrado.</div>}
                   {isAdmin && (
                     <div style={{border:'1px solid var(--bdr)',borderRadius:8,padding:16,background:'var(--s2)'}}>
-                      <div style={{fontSize:11,fontWeight:600,color:'var(--t2)',marginBottom:12,textTransform:'uppercase',letterSpacing:'.06em'}}>Adicionar contato</div>
+                      <div style={{fontSize:11,fontWeight:600,color:'var(--t2)',marginBottom:12,textTransform:'uppercase',letterSpacing:'.06em'}}>Adicionar membro da equipe</div>
                       <div className="fgrid">
-                        <div className="fg"><label>Nome</label><input value={ctForm.nome} onChange={e=>setCtForm(f=>({...f,nome:e.target.value}))}/></div>
-                        <div className="fg"><label>Cargo</label><input value={ctForm.cargo} onChange={e=>setCtForm(f=>({...f,cargo:e.target.value}))} placeholder="ex: Contador"/></div>
+                        <div className="fg"><label>Nome *</label><input value={ctForm.nome} onChange={e=>setCtForm(f=>({...f,nome:e.target.value}))} placeholder="Nome completo"/></div>
+                        <div className="fg"><label>Cargo *</label><input value={ctForm.cargo} onChange={e=>setCtForm(f=>({...f,cargo:e.target.value}))} placeholder="ex: Prefeito, Contador, Assessor"/></div>
                         <div className="fg"><label>Telefone</label><input value={ctForm.tel} onChange={e=>setCtForm(f=>({...f,tel:e.target.value}))}/></div>
                         <div className="fg"><label>E-mail</label><input value={ctForm.email} onChange={e=>setCtForm(f=>({...f,email:e.target.value}))}/></div>
                       </div>
@@ -1322,34 +1389,30 @@ export default function DashboardClient({ userNome, userPerfil }) {
 
               {munTab === 'demandas' && (
                 <>
-                  {(munModal.demandas||[]).map(d=>{
-                    const sc={'Em andamento':'bb','Concluido':'bg','Aguardando cliente':'ba'};
-                    return (
-                      <div key={d.id} style={{display:'flex',gap:10,padding:'10px 0',borderBottom:'1px solid var(--bdr)',alignItems:'flex-start'}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:13,fontWeight:500}}>{d.tipo}</div>
-                          <div style={{fontSize:12,color:'var(--t2)'}}>{d.descricao||'—'}</div>
-                          {d.procvinc&&<div style={{fontSize:11,color:'var(--t3)',marginTop:2}}>Processo: {d.procvinc}</div>}
-                        </div>
-                        <div style={{textAlign:'right',whiteSpace:'nowrap'}}>
-                          <span className={`badge ${sc[d.status]||'bgr'}`}>{d.status}</span>
-                          <div style={{fontSize:11,color:'var(--t3)',marginTop:4,fontFamily:'"JetBrains Mono",monospace'}}>{fd(d.data)}</div>
-                        </div>
+                  {(munModal.demandas||[]).length === 0 && <div style={{color:'var(--t3)',fontSize:13,marginBottom:16}}>Nenhuma legislacao cadastrada.</div>}
+                  {(munModal.demandas||[]).map(d=>(
+                    <div key={d.id} style={{display:'flex',gap:12,padding:'10px 0',borderBottom:'1px solid var(--bdr)',alignItems:'flex-start'}}>
+                      <div style={{flexShrink:0}}>
+                        <span className="badge bb" style={{fontSize:10}}>{d.tipo}</span>
                       </div>
-                    );
-                  })}
-                  {!(munModal.demandas||[]).length && <div style={{color:'var(--t3)',fontSize:13,marginBottom:16}}>Nenhuma demanda registrada.</div>}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:500}}>{d.procvinc||'—'}</div>
+                        <div style={{fontSize:12,color:'var(--t2)'}}>{d.descricao||''}</div>
+                        {d.status&&<a href={d.status} target="_blank" rel="noreferrer" style={{fontSize:11,color:'var(--blue)'}}>{d.status}</a>}
+                      </div>
+                      {isAdmin&&<button className="btn btn-sm btn-ghost" style={{color:'var(--red)',flexShrink:0}} onClick={()=>api(`/api/municipios/${munModal.id}/demandas/${d.id}`,{method:'DELETE'}).then(()=>{const muns=municipios.map(m=>m.id===munModal.id?{...m,demandas:(m.demandas||[]).filter(x=>x.id!==d.id)}:m);setMunicipios(muns);setMunModal(muns.find(x=>x.id===munModal.id));})}>Remover</button>}
+                    </div>
+                  ))}
                   {isAdmin && (
                     <div style={{border:'1px solid var(--bdr)',borderRadius:8,padding:16,background:'var(--s2)',marginTop:12}}>
-                      <div style={{fontSize:11,fontWeight:600,color:'var(--t2)',marginBottom:12,textTransform:'uppercase',letterSpacing:'.06em'}}>Registrar demanda</div>
+                      <div style={{fontSize:11,fontWeight:600,color:'var(--t2)',marginBottom:12,textTransform:'uppercase',letterSpacing:'.06em'}}>Adicionar legislacao</div>
                       <div className="fgrid">
-                        <div className="fg"><label>Tipo</label><select value={dmForm.tipo} onChange={e=>setDmForm(f=>({...f,tipo:e.target.value}))}><option>Defesa em processo TCE</option><option>Recurso / Embargo</option><option>Prestacao de contas</option><option>Fiscalizacao</option><option>Consulta juridica</option><option>Representacao</option><option>Outro</option></select></div>
-                        <div className="fg"><label>Data</label><input type="date" value={dmForm.data} onChange={e=>setDmForm(f=>({...f,data:e.target.value}))}/></div>
-                        <div className="fg full"><label>Descricao</label><input value={dmForm.descricao} onChange={e=>setDmForm(f=>({...f,descricao:e.target.value}))}/></div>
-                        <div className="fg"><label>Status</label><select value={dmForm.status} onChange={e=>setDmForm(f=>({...f,status:e.target.value}))}><option>Em andamento</option><option>Concluido</option><option>Aguardando cliente</option></select></div>
-                        <div className="fg"><label>Processo vinculado</label><input value={dmForm.procvinc} onChange={e=>setDmForm(f=>({...f,procvinc:e.target.value}))} placeholder="ex: 1234/2025"/></div>
+                        <div className="fg"><label>Tipo</label><select value={dmForm.tipo} onChange={e=>setDmForm(f=>({...f,tipo:e.target.value}))}><option>Lei</option><option>Lei Complementar</option><option>Decreto</option><option>Portaria</option><option>Resolucao</option><option>Instrucao Normativa</option><option>Outros</option></select></div>
+                        <div className="fg"><label>Numero / Identificacao</label><input value={dmForm.numero||''} onChange={e=>setDmForm(f=>({...f,numero:e.target.value}))} placeholder="ex: Lei 10.520/2002"/></div>
+                        <div className="fg full"><label>Descricao / Ementa</label><input value={dmForm.descricao} onChange={e=>setDmForm(f=>({...f,descricao:e.target.value}))} placeholder="ex: Lei de licitacoes e contratos"/></div>
+                        <div className="fg full"><label>Link (opcional)</label><input value={dmForm.url||''} onChange={e=>setDmForm(f=>({...f,url:e.target.value}))} placeholder="https://..."/></div>
                       </div>
-                      <button className="btn btn-sm btnp" style={{marginTop:12}} onClick={addDemanda}>Registrar</button>
+                      <button className="btn btn-sm btnp" style={{marginTop:12}} onClick={addDemanda}>Adicionar</button>
                     </div>
                   )}
                 </>
