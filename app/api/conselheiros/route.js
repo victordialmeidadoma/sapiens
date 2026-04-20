@@ -7,8 +7,9 @@ export async function PUT(req, { params }) {
   const { res } = await requireAdmin(req);
   if (res) return res;
   const d = await req.json();
+  const titulo = d.tipo === 'Conselheiro' ? `Conselheiro ${d.nome}` : `Conselheiro-Substituto ${d.nome}`;
   const db = createAdminClient();
-  await db.from('gestores').update({ nome: d.nome, cargo: d.cargo, municipio: d.municipio, tel: d.tel, email: d.email, contrato_tipo: d.contratoTipo, inicio: d.inicio, status: d.status, obs: d.obs }).eq('id', params.id);
+  await db.from('conselheiros').update({ nome: d.nome, tipo: d.tipo, titulo, ativo: d.ativo !== false }).eq('id', params.id);
   return NextResponse.json({ ok: true });
 }
 
@@ -16,6 +17,6 @@ export async function DELETE(req, { params }) {
   const { res } = await requireAdmin(req);
   if (res) return res;
   const db = createAdminClient();
-  await db.from('gestores').delete().eq('id', params.id);
+  await db.from('conselheiros').delete().eq('id', params.id);
   return NextResponse.json({ ok: true });
 }
