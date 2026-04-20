@@ -182,14 +182,18 @@ export default function DashboardClient({ userNome, userPerfil }) {
   async function loadAll() {
     setLoading(true);
     try {
-      const reqs = [api('/api/processos'), api('/api/municipios'), api('/api/gestores'), api('/api/conselheiros')];
-      if (isAdmin) reqs.push(api('/api/usuarios'));
-      const [p, m, g, c, u] = await Promise.all(reqs);
-      setProcessos(p); setMunicipios(m); setGestores(g); setConselheiros(c || []);
-      if (u) setUsuarios(u);
-      setDataLoaded(true);
+      const [p, m, g] = await Promise.all([
+        api('/api/processos'),
+        api('/api/municipios'),
+        api('/api/gestores'),
+      ]);
+      setProcessos(p || []); setMunicipios(m || []); setGestores(g || []);
+
+      // Load optional resources without blocking
+      try { const c = await api('/api/conselheiros'); setConselheiros(c || []); } catch {}
+      if (isAdmin) { try { const u = await api('/api/usuarios'); setUsuarios(u || []); } catch {} }
     } catch(e) { showToast('Erro ao carregar dados', 'err'); }
-    finally { setLoading(false); }
+    finally { setLoading(false); setDataLoaded(true); }
   }
 
   useEffect(() => { loadAll(); }, []);
@@ -800,7 +804,7 @@ export default function DashboardClient({ userNome, userPerfil }) {
                 <div className="mc r"><div className="mc-label">Urgentes (7 dias)</div><div className="mc-val">{urg.length}</div><div className="mc-sub">Acao imediata</div></div>
                 <div className="mc a"><div className="mc-label">Vencem em 30 dias</div><div className="mc-val">{m30.length}</div><div className="mc-sub">Monitorar</div></div>
                 <div className="mc b"><div className="mc-label">Total de processos</div><div className="mc-val">{processos.length}</div><div className="mc-sub">{mns.size} municipios</div></div>
-                <div className="mc g"><div className="mc-label">Municipios</div><div className="mc-val">{municipios.length}</div><div className="mc-sub">{gestores.length} gestores</div></div>
+                <div className="mc g"><div className="mc-label">Municipios ativos</div><div className="mc-val">{municipios.filter(m=>(m.mandatos||[]).some(md=>md.status==='Ativo')).length}</div><div className="mc-sub">{municipios.length} municipios cadastrados</div></div>
               </div>
               <div className="kpi-row">
                 <div className="kpi-mini"><div className="kpi-icon" style={{background:'var(--rl)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div><div className="kpi-val" style={{color:'var(--red)'}}>{ov.length}</div><div className="kpi-lbl">Prazos vencidos</div></div></div>
