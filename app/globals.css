@@ -9,9 +9,9 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Inter",-apple-system,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:"JetBrains Mono",monospace}
-.layout{display:flex;height:100vh;overflow:hidden}
-.sidebar{width:230px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;transition:left .25s}
-.main{flex:1;overflow-y:auto;background:var(--bg);min-width:0}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:230px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;transition:left .25s;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{flex:1;background:var(--bg);min-width:0}
 .topbar{background:var(--surf);border-bottom:1px solid var(--bdr);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}
 .page{padding:24px}
 .sb-logo{padding:18px 20px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px}
@@ -167,9 +167,9 @@ input[type=file]{display:none}
   .sidebar-overlay{display:block;opacity:0;pointer-events:none;transition:opacity .25s}
   .sidebar-overlay.open{opacity:1;pointer-events:all}
   .hamburger{display:flex}
-  .layout{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-  .main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;width:100%}
-  .topbar{padding:0 12px;height:52px;flex-shrink:0}
+  .layout{display:block;min-height:100vh}
+  .main{width:100%}
+  .topbar{padding:0 12px;height:52px;position:sticky;top:0;z-index:10}
   .page{padding:12px}
   .user-name{display:none}
   .tba{gap:6px}
@@ -189,8 +189,8 @@ input[type=file]{display:none}
   .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{min-width:unset;width:100%}
   th,td{padding:8px 10px;font-size:11px}
-  .modal-bg{padding:0;align-items:flex-end;overflow:hidden}
-  .modal,.modal-lg{border-radius:12px 12px 0 0;max-width:100%;max-height:92vh;overflow-y:auto;width:100%}
+  .modal-bg{padding:0;align-items:flex-end;overflow:hidden;position:fixed}
+  .modal,.modal-lg{border-radius:12px 12px 0 0;max-width:100%;max-height:88vh;overflow-y:auto;width:100%}
   .mhd{padding:14px 16px 12px}
   .mbd{padding:14px 16px}
   .mft{padding:10px 16px;flex-wrap:wrap;gap:6px}
